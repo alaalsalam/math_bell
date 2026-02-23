@@ -12,6 +12,10 @@ class MBAttemptLog(Document):
         ensure_link_exists('MB Session', self.session, 'Session')
         ensure_link_exists('MB Skill', self.skill, 'Skill')
         validate_json_field(self, 'given_answer_json', required=False)
+        if self.hint_used_count is None:
+            self.hint_used_count = 0
+        if not self.mistake_type:
+            self.mistake_type = "none"
 
 
 def on_doctype_update():

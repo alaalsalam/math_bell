@@ -69,6 +69,24 @@
    "label": "Hint Used"
   },
   {
+   "fieldname": "hint_used_count",
+   "fieldtype": "Int",
+   "label": "Hint Used Count",
+   "default": "0"
+  },
+  {
+   "fieldname": "mistake_type",
+   "fieldtype": "Select",
+   "label": "Mistake Type",
+   "options": "none\noff_by_one\ncarry_missed\nborrow_missed\nplace_value\nsign_confusion\nfraction_parts\nfraction_compare\nrandom",
+   "default": "none"
+  },
+  {
+   "fieldname": "hint_text",
+   "fieldtype": "Small Text",
+   "label": "Hint Text"
+  },
+  {
    "fieldname": "created_at",
    "fieldtype": "Datetime",
    "label": "Created At"
@@ -82,6 +100,9 @@
   "is_correct",
   "time_ms",
   "hint_used",
+  "hint_used_count",
+  "mistake_type",
+  "hint_text",
   "created_at"
  ]
 }
