@@ -81,6 +81,7 @@ function RunnerPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showBalloons, setShowBalloons] = useState(false);
   const [feedback, setFeedback] = useState({ status: "idle", value: null });
+  const [mascotMood, setMascotMood] = useState("🙂");
 
   const didFinishRef = useRef(false);
 
@@ -105,6 +106,7 @@ function RunnerPage() {
     setStreakCorrect(0);
     setFxMessage("");
     setFeedback({ status: "idle", value: null });
+    setMascotMood("🙂");
     didFinishRef.current = false;
     setRemainingSeconds(mode === "bell_session" ? BELL_DURATION_SECONDS : null);
 
@@ -185,10 +187,12 @@ function RunnerPage() {
     if (didFinishRef.current) return;
 
     didFinishRef.current = true;
+    setMascotMood("🥳");
     playSfx("bell_end", 0.85);
     playSfx("applause", 0.7);
     triggerConfetti(1200);
     triggerBalloons(2200);
+    showMessageTemporarily("أحسنت! انتهت الحصة 🔔");
 
     endSession({ session_id: sessionId })
       .then((res) => {
@@ -207,6 +211,7 @@ function RunnerPage() {
   async function finishSession() {
     if (!sessionId || didFinishRef.current) return;
     didFinishRef.current = true;
+    setMascotMood("🥳");
 
     setSubmitting(true);
     try {
@@ -244,6 +249,7 @@ function RunnerPage() {
     window.setTimeout(() => setFeedback({ status: "idle", value: null }), 700);
 
     if (isCorrect) {
+      setMascotMood("😄");
       tapHaptic([18, 28]);
       playSfx("correct", 0.85);
       if ((streakCorrect + 1) % 2 === 0) playSfx("applause", 0.45);
@@ -253,7 +259,12 @@ function RunnerPage() {
         triggerBalloons(2000);
         playSfx("pop", 0.5);
       }
+      if ((correct + 1) % 5 === 0) {
+        triggerConfetti(1200);
+        showMessageTemporarily("مستوى أعلى! 🎮");
+      }
     } else {
+      setMascotMood("🤔");
       tapHaptic([45]);
       playSfx("wrong", 0.7);
       showMessageTemporarily(getRandomMessage("wrong"));
@@ -287,6 +298,7 @@ function RunnerPage() {
 
       setIndex(nextIndex);
       setQuestionStartTs(Date.now());
+      window.setTimeout(() => setMascotMood("🙂"), 500);
     } catch (err) {
       setError(err.message || "فشل إرسال الإجابة");
     } finally {
@@ -298,6 +310,7 @@ function RunnerPage() {
     <PageShell title="تشغيل الجلسة" subtitle={subtitle}>
       <Confetti active={showConfetti} />
       <Balloons active={showBalloons} />
+      <div className="mascot-helper">{mascotMood}</div>
       {fxMessage ? <div className="kid-message-banner">{fxMessage}</div> : null}
 
       {loading ? <p>...جاري التحميل</p> : null}

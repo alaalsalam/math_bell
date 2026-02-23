@@ -620,6 +620,22 @@
   animation: message-pop 1.2s ease;
 }
 
+.mascot-helper {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid #bae6fd;
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  z-index: 55;
+  box-shadow: 0 10px 20px rgba(2, 132, 199, 0.2);
+}
+
 @keyframes message-pop {
   0% { opacity: 0; transform: translateX(-50%) scale(0.85); }
   20% { opacity: 1; transform: translateX(-50%) scale(1.04); }
