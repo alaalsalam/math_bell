@@ -1,0 +1,87 @@
+{
+ "doctype": "DocType",
+ "name": "MB Attempt Log",
+ "module": "Math Bell",
+ "custom": 0,
+ "istable": 0,
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "allow_rename": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "report": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "session",
+   "fieldtype": "Link",
+   "options": "MB Session",
+   "label": "Session",
+   "reqd": 1
+  },
+  {
+   "fieldname": "skill",
+   "fieldtype": "Link",
+   "options": "MB Skill",
+   "label": "Skill",
+   "reqd": 1
+  },
+  {
+   "fieldname": "question_ref",
+   "fieldtype": "Data",
+   "label": "Question Ref"
+  },
+  {
+   "fieldname": "given_answer_json",
+   "fieldtype": "Long Text",
+   "label": "Given Answer JSON"
+  },
+  {
+   "fieldname": "is_correct",
+   "fieldtype": "Check",
+   "label": "Is Correct"
+  },
+  {
+   "fieldname": "time_ms",
+   "fieldtype": "Int",
+   "label": "Time (ms)"
+  },
+  {
+   "fieldname": "hint_used",
+   "fieldtype": "Check",
+   "label": "Hint Used"
+  },
+  {
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At"
+  }
+ ],
+ "field_order": [
+  "session",
+  "skill",
+  "question_ref",
+  "given_answer_json",
+  "is_correct",
+  "time_ms",
+  "hint_used",
+  "created_at"
+ ]
+}

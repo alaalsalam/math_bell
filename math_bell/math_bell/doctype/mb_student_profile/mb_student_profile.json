@@ -1,0 +1,79 @@
+{
+ "doctype": "DocType",
+ "name": "MB Student Profile",
+ "module": "Math Bell",
+ "custom": 0,
+ "istable": 0,
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "allow_rename": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "report": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "display_name",
+   "fieldtype": "Data",
+   "label": "Display Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "grade",
+   "fieldtype": "Link",
+   "options": "MB Grade",
+   "label": "Grade",
+   "reqd": 1
+  },
+  {
+   "fieldname": "class_group",
+   "fieldtype": "Link",
+   "options": "MB Class Group",
+   "label": "Class Group"
+  },
+  {
+   "fieldname": "student_code",
+   "fieldtype": "Data",
+   "label": "Student Code",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "avatar",
+   "fieldtype": "Data",
+   "label": "Avatar"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active",
+   "default": "1"
+  }
+ ],
+ "field_order": [
+  "display_name",
+  "grade",
+  "class_group",
+  "student_code",
+  "avatar",
+  "is_active"
+ ],
+ "search_fields": "display_name,student_code"
+}

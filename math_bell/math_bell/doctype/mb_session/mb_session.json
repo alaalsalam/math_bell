@@ -1,0 +1,105 @@
+{
+ "doctype": "DocType",
+ "name": "MB Session",
+ "module": "Math Bell",
+ "custom": 0,
+ "istable": 0,
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "allow_rename": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "report": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "session_type",
+   "fieldtype": "Select",
+   "label": "Session Type",
+   "options": "practice\nbell_session",
+   "reqd": 1
+  },
+  {
+   "fieldname": "grade",
+   "fieldtype": "Link",
+   "options": "MB Grade",
+   "label": "Grade",
+   "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "options": "MB Domain",
+   "label": "Domain",
+   "reqd": 1
+  },
+  {
+   "fieldname": "skill",
+   "fieldtype": "Link",
+   "options": "MB Skill",
+   "label": "Skill"
+  },
+  {
+   "fieldname": "student",
+   "fieldtype": "Link",
+   "options": "MB Student Profile",
+   "label": "Student"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At"
+  },
+  {
+   "fieldname": "ended_at",
+   "fieldtype": "Datetime",
+   "label": "Ended At"
+  },
+  {
+   "fieldname": "duration_seconds",
+   "fieldtype": "Int",
+   "label": "Duration (Seconds)"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "draft\nactive\nended",
+   "default": "draft"
+  },
+  {
+   "fieldname": "stats_json",
+   "fieldtype": "Long Text",
+   "label": "Stats JSON"
+  }
+ ],
+ "field_order": [
+  "session_type",
+  "grade",
+  "domain",
+  "skill",
+  "student",
+  "started_at",
+  "ended_at",
+  "duration_seconds",
+  "status",
+  "stats_json"
+ ]
+}

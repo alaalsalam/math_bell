@@ -1,0 +1,70 @@
+{
+ "doctype": "DocType",
+ "name": "MB Lesson",
+ "module": "Math Bell",
+ "custom": 0,
+ "istable": 0,
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "allow_rename": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "report": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "skill",
+   "fieldtype": "Link",
+   "options": "MB Skill",
+   "label": "Skill",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title_ar",
+   "fieldtype": "Data",
+   "label": "Title (AR)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "content_json",
+   "fieldtype": "Long Text",
+   "label": "Content JSON"
+  },
+  {
+   "fieldname": "duration_seconds",
+   "fieldtype": "Int",
+   "label": "Duration (Seconds)",
+   "default": "180"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active",
+   "default": "1"
+  }
+ ],
+ "field_order": [
+  "skill",
+  "title_ar",
+  "content_json",
+  "duration_seconds",
+  "is_active"
+ ]
+}

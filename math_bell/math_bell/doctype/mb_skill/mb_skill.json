@@ -1,0 +1,94 @@
+{
+ "doctype": "DocType",
+ "name": "MB Skill",
+ "module": "Math Bell",
+ "custom": 0,
+ "istable": 0,
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "allow_rename": 1,
+ "autoname": "field:code",
+ "naming_rule": "By fieldname",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "report": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "label": "Code",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "grade",
+   "fieldtype": "Link",
+   "options": "MB Grade",
+   "label": "Grade",
+   "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "options": "MB Domain",
+   "label": "Domain",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title_ar",
+   "fieldtype": "Data",
+   "label": "Title (AR)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description_ar",
+   "fieldtype": "Small Text",
+   "label": "Description (AR)"
+  },
+  {
+   "fieldname": "order",
+   "fieldtype": "Int",
+   "label": "Order",
+   "default": "10"
+  },
+  {
+   "fieldname": "mastery_threshold",
+   "fieldtype": "Float",
+   "label": "Mastery Threshold",
+   "default": "0.8"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active",
+   "default": "1"
+  }
+ ],
+ "field_order": [
+  "code",
+  "grade",
+  "domain",
+  "title_ar",
+  "description_ar",
+  "order",
+  "mastery_threshold",
+  "is_active"
+ ],
+ "search_fields": "code,title_ar"
+}
