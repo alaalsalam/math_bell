@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { endSession, startSession, submitAttempt } from "../api/client";
 import { getStoredStudent } from "../utils/storage";
+
+const BELL_DURATION_SECONDS = 600;
 
 function normalizeAnswer(answer) {
   if (answer === null || answer === undefined) return "";
@@ -28,6 +30,13 @@ function isCorrectChoice(choice, answerObj) {
   return false;
 }
 
+function formatSeconds(totalSeconds) {
+  const value = Math.max(0, Number(totalSeconds || 0));
+  const mm = String(Math.floor(value / 60)).padStart(2, "0");
+  const ss = String(value % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
+
 function RunnerPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -46,6 +55,13 @@ function RunnerPage() {
   const [attempts, setAttempts] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [questionStartTs, setQuestionStartTs] = useState(Date.now());
+  const [remainingSeconds, setRemainingSeconds] = useState(
+    mode === "bell_session" ? BELL_DURATION_SECONDS : null
+  );
+
+  const didFinishRef = useRef(false);
+  const startBellRef = useRef(null);
+  const endBellRef = useRef(null);
 
   const current = questions[index] || null;
 
@@ -55,19 +71,30 @@ function RunnerPage() {
   }, [mode]);
 
   useEffect(() => {
+    startBellRef.current = new Audio("/assets/math_bell/bell_start.mp3");
+    endBellRef.current = new Audio("/assets/math_bell/bell_end.mp3");
+    return () => {
+      startBellRef.current = null;
+      endBellRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
     let alive = true;
     const student = getStoredStudent();
 
     setLoading(true);
     setError("");
     setSessionId("");
+    didFinishRef.current = false;
+    setRemainingSeconds(mode === "bell_session" ? BELL_DURATION_SECONDS : null);
 
     startSession({
       session_type: mode,
       grade,
       domain,
       skill,
-      duration_seconds: mode === "bell_session" ? 600 : undefined,
+      duration_seconds: mode === "bell_session" ? BELL_DURATION_SECONDS : undefined,
       student: student?.student_id,
     })
       .then((res) => {
@@ -77,6 +104,12 @@ function RunnerPage() {
         setQuestions(Array.isArray(payload.questions) ? payload.questions : []);
         setIndex(0);
         setQuestionStartTs(Date.now());
+
+        if (mode === "bell_session") {
+          startBellRef.current?.play().catch(() => {
+            // Ignore autoplay restrictions; user interaction will enable later plays.
+          });
+        }
       })
       .catch((err) => {
         if (!alive) return;
@@ -92,10 +125,56 @@ function RunnerPage() {
     };
   }, [grade, domain, skill, mode]);
 
+  useEffect(() => {
+    if (mode !== "bell_session") return undefined;
+    if (loading || !sessionId || didFinishRef.current) return undefined;
+
+    const timer = window.setInterval(() => {
+      setRemainingSeconds((prev) => {
+        const next = Number(prev || 0) - 1;
+        if (next <= 0) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [mode, loading, sessionId]);
+
+  useEffect(() => {
+    if (mode !== "bell_session") return;
+    if (!sessionId || loading) return;
+    if (remainingSeconds === null) return;
+    if (remainingSeconds > 0) return;
+    if (didFinishRef.current) return;
+
+    didFinishRef.current = true;
+    endBellRef.current?.play().catch(() => {});
+    endSession({ session_id: sessionId })
+      .then((res) => {
+        navigate(`/report/${sessionId}`, {
+          state: {
+            report: res?.data?.report || null,
+            mode,
+          },
+        });
+      })
+      .catch((err) => {
+        setError(err.message || "فشل إنهاء الجلسة");
+      });
+  }, [remainingSeconds, mode, sessionId, loading, navigate]);
+
   async function finishSession() {
-    if (!sessionId) return;
+    if (!sessionId || didFinishRef.current) return;
+    didFinishRef.current = true;
+
     setSubmitting(true);
     try {
+      endBellRef.current?.play().catch(() => {});
       const res = await endSession({ session_id: sessionId });
       navigate(`/report/${sessionId}`, {
         state: {
@@ -105,13 +184,14 @@ function RunnerPage() {
       });
     } catch (err) {
       setError(err.message || "فشل إنهاء الجلسة");
+      didFinishRef.current = false;
     } finally {
       setSubmitting(false);
     }
   }
 
   async function answerQuestion(choice) {
-    if (!current || submitting || !sessionId) return;
+    if (!current || submitting || !sessionId || didFinishRef.current) return;
 
     const spentMs = Math.max(1, Date.now() - questionStartTs);
     const isCorrect = isCorrectChoice(choice, current.answer);
@@ -150,6 +230,12 @@ function RunnerPage() {
     <PageShell title="تشغيل الجلسة" subtitle={subtitle}>
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
+
+      {mode === "bell_session" && remainingSeconds !== null ? (
+        <p className="timer-badge">
+          الوقت المتبقي: <strong>{formatSeconds(remainingSeconds)}</strong>
+        </p>
+      ) : null}
 
       {!loading && !error && questions.length === 0 ? (
         <div>
