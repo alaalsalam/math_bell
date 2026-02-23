@@ -10,6 +10,7 @@ import SkillsPage from "../pages/SkillsPage";
 import TeacherClassPage from "../pages/TeacherClassPage";
 import TeacherDashboardPage from "../pages/TeacherDashboardPage";
 import TeacherStudentPage from "../pages/TeacherStudentPage";
+import TeacherStudentsPage from "../pages/TeacherStudentsPage";
 
 function AppRouter() {
   return (
@@ -84,6 +85,22 @@ function AppRouter() {
         />
         <Route
           path="/teacher/student/:studentId"
+          element={
+            <RequireTeacherMode>
+              <TeacherStudentPage />
+            </RequireTeacherMode>
+          }
+        />
+        <Route
+          path="/teacher/students"
+          element={
+            <RequireTeacherMode>
+              <TeacherStudentsPage />
+            </RequireTeacherMode>
+          }
+        />
+        <Route
+          path="/teacher/students/:studentId"
           element={
             <RequireTeacherMode>
               <TeacherStudentPage />

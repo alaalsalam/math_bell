@@ -378,3 +378,15 @@
   margin-top: 10px;
   flex-wrap: wrap;
 }
+
+.filters-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr auto;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .filters-row {
+    grid-template-columns: 1fr;
+  }
+}
