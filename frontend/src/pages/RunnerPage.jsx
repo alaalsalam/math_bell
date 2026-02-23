@@ -2,6 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { endSession, startSession, submitAttempt } from "../api/client";
+import Balloons from "../kidfx/balloons";
+import Confetti from "../kidfx/confetti";
+import { tapHaptic } from "../kidfx/haptics";
+import { getRandomMessage } from "../kidfx/messages";
+import { playSfx } from "../kidfx/sounds";
 import BubblePickGame from "../games/BubblePickGame";
 import DragDropGroupsGame from "../games/DragDropGroupsGame";
 import VerticalColumnGame from "../games/VerticalColumnGame";
@@ -66,14 +71,18 @@ function RunnerPage() {
   const [submitting, setSubmitting] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [correct, setCorrect] = useState(0);
+  const [streakCorrect, setStreakCorrect] = useState(0);
   const [questionStartTs, setQuestionStartTs] = useState(Date.now());
   const [remainingSeconds, setRemainingSeconds] = useState(
     mode === "bell_session" ? BELL_DURATION_SECONDS : null
   );
 
+  const [fxMessage, setFxMessage] = useState("");
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showBalloons, setShowBalloons] = useState(false);
+  const [feedback, setFeedback] = useState({ status: "idle", value: null });
+
   const didFinishRef = useRef(false);
-  const startBellRef = useRef(null);
-  const endBellRef = useRef(null);
 
   const current = questions[index] || null;
 
@@ -85,15 +94,6 @@ function RunnerPage() {
   const CurrentEngine = ENGINE_COMPONENTS[current?.question?.ui] || BubblePickGame;
 
   useEffect(() => {
-    startBellRef.current = new Audio("/assets/math_bell/bell_start.mp3");
-    endBellRef.current = new Audio("/assets/math_bell/bell_end.mp3");
-    return () => {
-      startBellRef.current = null;
-      endBellRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
     let alive = true;
     const student = getStoredStudent();
 
@@ -102,6 +102,9 @@ function RunnerPage() {
     setSessionId("");
     setAttempts(0);
     setCorrect(0);
+    setStreakCorrect(0);
+    setFxMessage("");
+    setFeedback({ status: "idle", value: null });
     didFinishRef.current = false;
     setRemainingSeconds(mode === "bell_session" ? BELL_DURATION_SECONDS : null);
 
@@ -123,7 +126,7 @@ function RunnerPage() {
         setQuestionStartTs(Date.now());
 
         if (mode === "bell_session") {
-          startBellRef.current?.play().catch(() => {});
+          playSfx("bell_start", 0.8);
         }
       })
       .catch((err) => {
@@ -160,6 +163,21 @@ function RunnerPage() {
     };
   }, [mode, loading, sessionId]);
 
+  function showMessageTemporarily(text) {
+    setFxMessage(text);
+    window.setTimeout(() => setFxMessage(""), 1200);
+  }
+
+  function triggerConfetti(duration = 1000) {
+    setShowConfetti(true);
+    window.setTimeout(() => setShowConfetti(false), duration);
+  }
+
+  function triggerBalloons(duration = 2000) {
+    setShowBalloons(true);
+    window.setTimeout(() => setShowBalloons(false), duration);
+  }
+
   useEffect(() => {
     if (mode !== "bell_session") return;
     if (!sessionId || loading) return;
@@ -167,7 +185,11 @@ function RunnerPage() {
     if (didFinishRef.current) return;
 
     didFinishRef.current = true;
-    endBellRef.current?.play().catch(() => {});
+    playSfx("bell_end", 0.85);
+    playSfx("applause", 0.7);
+    triggerConfetti(1200);
+    triggerBalloons(2200);
+
     endSession({ session_id: sessionId })
       .then((res) => {
         navigate(`/report/${sessionId}`, {
@@ -188,14 +210,21 @@ function RunnerPage() {
 
     setSubmitting(true);
     try {
-      endBellRef.current?.play().catch(() => {});
+      playSfx("bell_end", 0.85);
+      playSfx("applause", 0.7);
+      triggerConfetti(1200);
+      triggerBalloons(2200);
+      showMessageTemporarily("أحسنت! انتهت الحصة 🔔");
+
       const res = await endSession({ session_id: sessionId });
-      navigate(`/report/${sessionId}`, {
-        state: {
-          report: res?.data?.report || null,
-          mode,
-        },
-      });
+      window.setTimeout(() => {
+        navigate(`/report/${sessionId}`, {
+          state: {
+            report: res?.data?.report || null,
+            mode,
+          },
+        });
+      }, 350);
     } catch (err) {
       setError(err.message || "فشل إنهاء الجلسة");
       didFinishRef.current = false;
@@ -209,6 +238,26 @@ function RunnerPage() {
 
     const spentMs = Math.max(1, Date.now() - questionStartTs);
     const isCorrect = isCorrectAnswer(givenAnswer, current.answer);
+    const pickedValue = givenAnswer?.value;
+
+    setFeedback({ status: isCorrect ? "correct" : "wrong", value: pickedValue });
+    window.setTimeout(() => setFeedback({ status: "idle", value: null }), 700);
+
+    if (isCorrect) {
+      tapHaptic([18, 28]);
+      playSfx("correct", 0.85);
+      if ((streakCorrect + 1) % 2 === 0) playSfx("applause", 0.45);
+      triggerConfetti(1000);
+      showMessageTemporarily(getRandomMessage("correct"));
+      if ((streakCorrect + 1) % 3 === 0) {
+        triggerBalloons(2000);
+        playSfx("pop", 0.5);
+      }
+    } else {
+      tapHaptic([45]);
+      playSfx("wrong", 0.7);
+      showMessageTemporarily(getRandomMessage("wrong"));
+    }
 
     setSubmitting(true);
     try {
@@ -223,7 +272,12 @@ function RunnerPage() {
       });
 
       setAttempts((prev) => prev + 1);
-      if (isCorrect) setCorrect((prev) => prev + 1);
+      if (isCorrect) {
+        setCorrect((prev) => prev + 1);
+        setStreakCorrect((prev) => prev + 1);
+      } else {
+        setStreakCorrect(0);
+      }
 
       const nextIndex = index + 1;
       if (nextIndex >= questions.length) {
@@ -242,6 +296,10 @@ function RunnerPage() {
 
   return (
     <PageShell title="تشغيل الجلسة" subtitle={subtitle}>
+      <Confetti active={showConfetti} />
+      <Balloons active={showBalloons} />
+      {fxMessage ? <div className="kid-message-banner">{fxMessage}</div> : null}
+
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
 
@@ -269,9 +327,17 @@ function RunnerPage() {
             <span>
               إجابات صحيحة: {correct} | المحاولات: {attempts}
             </span>
+            <span>السلسلة: {streakCorrect} 🔥</span>
           </div>
 
-          <CurrentEngine question={current.question} disabled={submitting} onAnswer={handleAnswer} />
+          <CurrentEngine
+            question={current.question}
+            disabled={submitting}
+            onAnswer={handleAnswer}
+            feedback={feedback}
+            questionIndex={index}
+            totalQuestions={questions.length}
+          />
 
           <div className="actions-inline">
             <button type="button" className="secondary-btn" onClick={finishSession} disabled={submitting}>

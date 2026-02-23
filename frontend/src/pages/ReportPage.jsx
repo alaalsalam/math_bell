@@ -1,13 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
+import Confetti from "../kidfx/confetti";
+import { calcStarsFromScore } from "../kidfx/rewards";
 import { endSession } from "../api/client";
-
-function calcStars(accuracyPercent) {
-  if (accuracyPercent >= 90) return 3;
-  if (accuracyPercent >= 70) return 2;
-  return 1;
-}
 
 function ReportPage() {
   const { sessionId } = useParams();
@@ -17,6 +13,7 @@ function ReportPage() {
   const [loading, setLoading] = useState(!location.state?.report);
   const [error, setError] = useState("");
   const [report, setReport] = useState(location.state?.report || null);
+  const [showStarsFx, setShowStarsFx] = useState(false);
 
   useEffect(() => {
     if (report) return;
@@ -42,15 +39,24 @@ function ReportPage() {
     };
   }, [sessionId, report]);
 
+  useEffect(() => {
+    if (!report) return;
+    setShowStarsFx(true);
+    const timer = window.setTimeout(() => setShowStarsFx(false), 1400);
+    return () => window.clearTimeout(timer);
+  }, [report]);
+
   const accuracyPercent = useMemo(() => {
     const accuracy = Number(report?.accuracy || 0);
     return Math.round(accuracy * 100);
   }, [report]);
 
-  const stars = calcStars(accuracyPercent);
+  const stars = calcStarsFromScore(Number(report?.correct || 0), Number(report?.attempts || 0));
 
   return (
     <PageShell title="النتيجة" subtitle={`Session: ${sessionId || "-"}`}>
+      <Confetti active={showStarsFx} />
+
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
 
@@ -65,8 +71,9 @@ function ReportPage() {
           <p>
             الوقت المستغرق: <strong>{report.duration_seconds || 0}</strong> ثانية
           </p>
-          <p>
-            النجوم: <strong>{"★".repeat(stars)}</strong>
+          <p className="stars-fx-row">
+            النجوم:
+            <strong className="stars-fx">{"★".repeat(stars)}</strong>
           </p>
 
           <button type="button" className="primary-btn" onClick={() => navigate("/")}>
