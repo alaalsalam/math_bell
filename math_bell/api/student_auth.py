@@ -4,6 +4,7 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from math_bell.api.helpers import ensure_active_link
+from math_bell.api.planner import ensure_current_week_plan
 from math_bell.math_bell.doctype.mb_student_profile.mb_student_profile import AVATAR_EMOJIS
 
 
@@ -112,6 +113,7 @@ def login_student(display_name: str, password_simple: str):
         return {"ok": False, "message": "بيانات غير صحيحة"}
 
     student.db_set("last_login", now_datetime(), update_modified=False)
+    ensure_current_week_plan(student.name)
 
     return {
         "ok": True,
