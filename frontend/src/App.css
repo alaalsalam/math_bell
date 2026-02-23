@@ -355,6 +355,31 @@
   color: #0f172a;
 }
 
+.answer-drop-box {
+  border: 2px dashed #60a5fa;
+  background: #f0f9ff;
+  border-radius: 14px;
+  padding: 12px;
+  margin: 12px 0;
+  text-align: center;
+}
+
+.answer-drop-box p {
+  margin: 0;
+  color: #0369a1;
+  font-weight: 700;
+}
+
+.answer-drop-box strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.4rem;
+}
+
+.drag-choice-btn {
+  cursor: grab;
+}
+
 .column-math {
   width: min(220px, 100%);
   margin: 10px auto 0;
