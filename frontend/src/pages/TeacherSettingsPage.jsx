@@ -1,0 +1,180 @@
+import { useEffect, useState } from "react";
+import PageShell from "../components/PageShell";
+import { getSystemSettings, updateSystemSettings } from "../api/client";
+
+const ENGINE_OPTIONS = [
+  { key: "mcq", label: "أسئلة سريعة" },
+  { key: "drag_drop_groups", label: "سحب وإفلات" },
+  { key: "vertical_column", label: "عمودي" },
+  { key: "fraction_builder", label: "الكسور" },
+];
+
+function TeacherSettingsPage() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [ok, setOk] = useState("");
+
+  const [form, setForm] = useState({
+    teacher_passcode: "1234",
+    default_bell_duration_seconds: 600,
+    default_questions_per_session: 10,
+    enable_sound: 1,
+    enable_confetti: 1,
+    enable_balloons: 1,
+    allow_guest_play: 0,
+    show_only_skills_with_questions: 1,
+    enabled_game_engines: ["mcq", "drag_drop_groups", "vertical_column", "fraction_builder"],
+  });
+
+  useEffect(() => {
+    let alive = true;
+    async function loadSettings() {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await getSystemSettings();
+        if (!alive) return;
+        setForm((prev) => ({ ...prev, ...(res?.data || {}) }));
+      } catch (err) {
+        if (!alive) return;
+        setError(err.message || "فشل تحميل الإعدادات");
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    }
+    loadSettings();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  function setField(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleEngine(key) {
+    const list = Array.isArray(form.enabled_game_engines) ? form.enabled_game_engines : [];
+    if (list.includes(key)) {
+      setField(
+        "enabled_game_engines",
+        list.filter((item) => item !== key)
+      );
+      return;
+    }
+    setField("enabled_game_engines", [...list, key]);
+  }
+
+  async function saveSettings(event) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setOk("");
+    try {
+      const res = await updateSystemSettings(form);
+      setForm((prev) => ({ ...prev, ...(res?.data || {}) }));
+      setOk("تم حفظ الإعدادات");
+    } catch (err) {
+      setError(err.message || "فشل حفظ الإعدادات");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <PageShell title="إعدادات النظام" subtitle="التحكم الكامل بمنصة Math Bell">
+      {loading ? <p>...جاري التحميل</p> : null}
+      {error ? <p className="error-text">{error}</p> : null}
+      {ok ? <p className="ok-text">{ok}</p> : null}
+
+      {!loading ? (
+        <form className="auth-form" onSubmit={saveSettings}>
+          <input
+            className="field"
+            value={form.teacher_passcode || ""}
+            onChange={(e) => setField("teacher_passcode", e.target.value)}
+            placeholder="رمز وضع المعلمة"
+          />
+          <input
+            className="field"
+            type="number"
+            value={form.default_bell_duration_seconds || 600}
+            onChange={(e) => setField("default_bell_duration_seconds", Number(e.target.value || 600))}
+            placeholder="مدة حصة الجرس"
+          />
+          <input
+            className="field"
+            type="number"
+            value={form.default_questions_per_session || 10}
+            onChange={(e) => setField("default_questions_per_session", Number(e.target.value || 10))}
+            placeholder="عدد الأسئلة"
+          />
+
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.enable_sound)}
+              onChange={(e) => setField("enable_sound", e.target.checked ? 1 : 0)}
+            />
+            تفعيل الصوت
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.enable_confetti)}
+              onChange={(e) => setField("enable_confetti", e.target.checked ? 1 : 0)}
+            />
+            تفعيل الكونفيتي
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.enable_balloons)}
+              onChange={(e) => setField("enable_balloons", e.target.checked ? 1 : 0)}
+            />
+            تفعيل البالونات
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.allow_guest_play)}
+              onChange={(e) => setField("allow_guest_play", e.target.checked ? 1 : 0)}
+            />
+            السماح باللعب كضيف
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(form.show_only_skills_with_questions)}
+              onChange={(e) => setField("show_only_skills_with_questions", e.target.checked ? 1 : 0)}
+            />
+            عرض المهارات التي فيها أسئلة فقط
+          </label>
+
+          <div className="teacher-block class-card">
+            <h3>المحركات المفعلة</h3>
+            <div className="engine-toggles">
+              {ENGINE_OPTIONS.map((item) => (
+                <label key={item.key}>
+                  <input
+                    type="checkbox"
+                    checked={(form.enabled_game_engines || []).includes(item.key)}
+                    onChange={() => toggleEngine(item.key)}
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <button type="submit" className="primary-btn" disabled={saving}>
+            {saving ? "..." : "حفظ الإعدادات"}
+          </button>
+        </form>
+      ) : null}
+    </PageShell>
+  );
+}
+
+export default TeacherSettingsPage;

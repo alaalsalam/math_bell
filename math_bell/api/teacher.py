@@ -1,6 +1,7 @@
 import frappe
 from frappe import _
 from frappe.utils import add_days, get_datetime, now_datetime
+from math_bell.utils.settings import get_mb_settings
 
 
 def _parse_date_range(date_from=None, date_to=None):
@@ -352,3 +353,62 @@ def class_report(class_group: str, date_from: str | None = None, date_to: str | 
             ],
         },
     }
+
+
+@frappe.whitelist(allow_guest=True)
+def get_settings():
+    return {"ok": True, "data": get_mb_settings()}
+
+
+@frappe.whitelist(allow_guest=True)
+def update_settings(
+    teacher_passcode: str | None = None,
+    default_bell_duration_seconds: int | None = None,
+    default_questions_per_session: int | None = None,
+    enable_sound: int | bool | None = None,
+    enable_confetti: int | bool | None = None,
+    enable_balloons: int | bool | None = None,
+    allow_guest_play: int | bool | None = None,
+    show_only_skills_with_questions: int | bool | None = None,
+    enabled_game_engines=None,
+):
+    if teacher_passcode is not None:
+        frappe.db.set_single_value("MB Settings", "teacher_passcode", str(teacher_passcode).strip())
+    if default_bell_duration_seconds is not None:
+        frappe.db.set_single_value(
+            "MB Settings",
+            "default_bell_duration_seconds",
+            max(int(default_bell_duration_seconds), 60),
+        )
+    if default_questions_per_session is not None:
+        frappe.db.set_single_value(
+            "MB Settings",
+            "default_questions_per_session",
+            max(int(default_questions_per_session), 1),
+        )
+
+    bool_fields = {
+        "enable_sound": enable_sound,
+        "enable_confetti": enable_confetti,
+        "enable_balloons": enable_balloons,
+        "allow_guest_play": allow_guest_play,
+        "show_only_skills_with_questions": show_only_skills_with_questions,
+    }
+    for fieldname, value in bool_fields.items():
+        if value is not None:
+            frappe.db.set_single_value("MB Settings", fieldname, 1 if int(value) else 0)
+
+    if enabled_game_engines is not None:
+        parsed = enabled_game_engines
+        if isinstance(parsed, str):
+            try:
+                parsed = frappe.parse_json(parsed)
+            except Exception:
+                parsed = [entry.strip() for entry in parsed.split(",") if entry.strip()]
+        if not isinstance(parsed, list):
+            parsed = []
+        cleaned = [str(item).strip() for item in parsed if str(item).strip()]
+        frappe.db.set_single_value("MB Settings", "engines_json", frappe.as_json(cleaned))
+
+    frappe.db.commit()
+    return {"ok": True, "data": get_mb_settings()}

@@ -154,3 +154,11 @@ export async function getTeacherKpis() {
 export async function getStudentDetail({ student_id }) {
   return request("math_bell.api.analytics.student_detail", { student_id });
 }
+
+export async function getSystemSettings() {
+  return request("math_bell.api.teacher.get_settings");
+}
+
+export async function updateSystemSettings(payload) {
+  return request("math_bell.api.teacher.update_settings", payload);
+}

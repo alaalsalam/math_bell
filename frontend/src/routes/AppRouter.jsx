@@ -11,6 +11,7 @@ import TeacherClassPage from "../pages/TeacherClassPage";
 import TeacherDashboardPage from "../pages/TeacherDashboardPage";
 import TeacherStudentPage from "../pages/TeacherStudentPage";
 import TeacherStudentsPage from "../pages/TeacherStudentsPage";
+import TeacherSettingsPage from "../pages/TeacherSettingsPage";
 
 function AppRouter() {
   return (
@@ -104,6 +105,14 @@ function AppRouter() {
           element={
             <RequireTeacherMode>
               <TeacherStudentPage />
+            </RequireTeacherMode>
+          }
+        />
+        <Route
+          path="/teacher/settings"
+          element={
+            <RequireTeacherMode>
+              <TeacherSettingsPage />
             </RequireTeacherMode>
           }
         />
