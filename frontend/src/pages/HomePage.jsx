@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "../components/PageShell";
+import { getTimeGreeting, personalizedStart } from "../saudi/greetings";
 import { getStudentHomeInsights } from "../api/client";
 import { getStoredStudent } from "../utils/storage";
 import { enableTeacherMode, verifyTeacherPasscode } from "../utils/teacherMode";
@@ -13,6 +14,7 @@ const GRADES = [
 function HomePage() {
   const navigate = useNavigate();
   const student = getStoredStudent();
+  const greeting = getTimeGreeting();
 
   const [insight, setInsight] = useState(null);
   const [error, setError] = useState("");
@@ -56,7 +58,7 @@ function HomePage() {
   }, [insight]);
 
   return (
-    <PageShell title="جرس الرياضيات" subtitle="اختر الصف">
+    <PageShell title="جرس الرياضيات" subtitle={greeting}>
       <div className="teacher-mode-link-wrap">
         <button type="button" className="teacher-link" onClick={openTeacherMode}>
           وضع المعلمة
@@ -86,6 +88,7 @@ function HomePage() {
         </section>
       ) : null}
 
+      {student?.display_name ? <p className="ok-text">{personalizedStart(student.display_name)}</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
 
       <div className="grid-buttons">

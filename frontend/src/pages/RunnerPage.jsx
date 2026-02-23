@@ -6,6 +6,8 @@ import Balloons from "../kidfx/balloons";
 import Confetti from "../kidfx/confetti";
 import { tapHaptic } from "../kidfx/haptics";
 import { getRandomMessage } from "../kidfx/messages";
+import { getSaudiMessage } from "../saudi/saudi_messages";
+import { personalizedProgress, personalizedStart } from "../saudi/greetings";
 import { playSfx } from "../kidfx/sounds";
 import BubblePickGame from "../games/BubblePickGame";
 import DragDropGroupsGame from "../games/DragDropGroupsGame";
@@ -82,6 +84,7 @@ function RunnerPage() {
   const [showBalloons, setShowBalloons] = useState(false);
   const [feedback, setFeedback] = useState({ status: "idle", value: null });
   const [mascotMood, setMascotMood] = useState("🙂");
+  const [mascotText, setMascotText] = useState("ترى أؤمن فيك 😄");
 
   const didFinishRef = useRef(false);
 
@@ -107,6 +110,7 @@ function RunnerPage() {
     setFxMessage("");
     setFeedback({ status: "idle", value: null });
     setMascotMood("🙂");
+    setMascotText("ترى أؤمن فيك 😄");
     didFinishRef.current = false;
     setRemainingSeconds(mode === "bell_session" ? BELL_DURATION_SECONDS : null);
 
@@ -254,7 +258,8 @@ function RunnerPage() {
       playSfx("correct", 0.85);
       if ((streakCorrect + 1) % 2 === 0) playSfx("applause", 0.45);
       triggerConfetti(1000);
-      showMessageTemporarily(getRandomMessage("correct"));
+      showMessageTemporarily(getSaudiMessage("correct"));
+      if (getStoredStudent()?.display_name) setMascotText(personalizedProgress(getStoredStudent().display_name));
       if ((streakCorrect + 1) % 3 === 0) {
         triggerBalloons(2000);
         playSfx("pop", 0.5);
@@ -267,7 +272,8 @@ function RunnerPage() {
       setMascotMood("🤔");
       tapHaptic([45]);
       playSfx("wrong", 0.7);
-      showMessageTemporarily(getRandomMessage("wrong"));
+      showMessageTemporarily(getSaudiMessage("wrong"));
+      setMascotText("بس ركز معي شوي 👀");
     }
 
     setSubmitting(true);
@@ -311,6 +317,7 @@ function RunnerPage() {
       <Confetti active={showConfetti} />
       <Balloons active={showBalloons} />
       <div className="mascot-helper">{mascotMood}</div>
+      <div className="mascot-helper-text">{mascotText}</div>
       {fxMessage ? <div className="kid-message-banner">{fxMessage}</div> : null}
 
       {loading ? <p>...جاري التحميل</p> : null}
