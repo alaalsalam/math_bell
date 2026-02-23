@@ -1,0 +1,94 @@
+{
+ "doctype": "DocType",
+ "name": "MB Settings",
+ "module": "Math Bell",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 1,
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "report": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "fields": [
+  {
+   "fieldname": "teacher_passcode",
+   "fieldtype": "Data",
+   "label": "Teacher Passcode",
+   "default": "1234"
+  },
+  {
+   "fieldname": "default_bell_duration_seconds",
+   "fieldtype": "Int",
+   "label": "Default Bell Duration (Seconds)",
+   "default": "600"
+  },
+  {
+   "fieldname": "default_questions_per_session",
+   "fieldtype": "Int",
+   "label": "Default Questions Per Session",
+   "default": "10"
+  },
+  {
+   "fieldname": "enable_sound",
+   "fieldtype": "Check",
+   "label": "Enable Sound",
+   "default": "1"
+  },
+  {
+   "fieldname": "enable_confetti",
+   "fieldtype": "Check",
+   "label": "Enable Confetti",
+   "default": "1"
+  },
+  {
+   "fieldname": "enable_balloons",
+   "fieldtype": "Check",
+   "label": "Enable Balloons",
+   "default": "1"
+  },
+  {
+   "fieldname": "allow_guest_play",
+   "fieldtype": "Check",
+   "label": "Allow Guest Play",
+   "default": "0"
+  },
+  {
+   "fieldname": "show_only_skills_with_questions",
+   "fieldtype": "Check",
+   "label": "Show Only Skills With Questions",
+   "default": "1"
+  },
+  {
+   "fieldname": "engines_json",
+   "fieldtype": "Long Text",
+   "label": "Enabled Engines JSON",
+   "default": "[\"mcq\", \"drag_drop_groups\", \"vertical_column\", \"fraction_builder\"]"
+  }
+ ],
+ "field_order": [
+  "teacher_passcode",
+  "default_bell_duration_seconds",
+  "default_questions_per_session",
+  "enable_sound",
+  "enable_confetti",
+  "enable_balloons",
+  "allow_guest_play",
+  "show_only_skills_with_questions",
+  "engines_json"
+ ]
+}
