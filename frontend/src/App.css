@@ -396,3 +396,35 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 8px;
 }
+
+.ring-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.progress-ring {
+  --progress: 0%;
+  width: 92px;
+  height: 92px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(#0284c7 var(--progress), #e2e8f0 0);
+  position: relative;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.progress-ring::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.progress-ring span {
+  position: relative;
+  z-index: 1;
+}

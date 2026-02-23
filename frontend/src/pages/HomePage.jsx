@@ -1,5 +1,8 @@
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "../components/PageShell";
+import { getStudentHomeInsights } from "../api/client";
+import { getStoredStudent } from "../utils/storage";
 import { enableTeacherMode, verifyTeacherPasscode } from "../utils/teacherMode";
 
 const GRADES = [
@@ -9,6 +12,29 @@ const GRADES = [
 
 function HomePage() {
   const navigate = useNavigate();
+  const student = getStoredStudent();
+
+  const [insight, setInsight] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    if (!student?.student_id) return undefined;
+
+    getStudentHomeInsights({ student_id: student.student_id })
+      .then((res) => {
+        if (!alive) return;
+        setInsight(res?.data || null);
+      })
+      .catch((err) => {
+        if (!alive) return;
+        setError(err.message || "فشل تحميل ملخص اليوم");
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [student?.student_id]);
 
   function openTeacherMode() {
     const input = window.prompt("أدخلي رمز وضع المعلمة");
@@ -23,6 +49,12 @@ function HomePage() {
     navigate("/teacher");
   }
 
+  const progressPercent = useMemo(() => {
+    const attempts = Number(insight?.attempts_today || 0);
+    const target = Math.max(Number(insight?.target_today || 10), 1);
+    return Math.min(100, Math.round((attempts / target) * 100));
+  }, [insight]);
+
   return (
     <PageShell title="جرس الرياضيات" subtitle="اختر الصف">
       <div className="teacher-mode-link-wrap">
@@ -30,6 +62,31 @@ function HomePage() {
           وضع المعلمة
         </button>
       </div>
+
+      {insight ? (
+        <section className="teacher-block class-grid">
+          <article className="class-card">
+            <h3>اقتراح اليوم</h3>
+            <p>{insight.recommended_next_skill || "ابدأ أي مهارة متاحة"}</p>
+            <p>
+              المستوى: {insight.level || 1} | السلسلة: {insight.streak || 0} 🔥
+            </p>
+          </article>
+          <article className="class-card">
+            <h3>هدف اليوم</h3>
+            <p>
+              حل {insight.target_today || 10} أسئلة (اليوم: {insight.attempts_today || 0})
+            </p>
+            <div className="ring-wrap">
+              <div className="progress-ring" style={{ "--progress": `${progressPercent}%` }}>
+                <span>{progressPercent}%</span>
+              </div>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
+      {error ? <p className="error-text">{error}</p> : null}
 
       <div className="grid-buttons">
         {GRADES.map((item) => (

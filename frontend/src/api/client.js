@@ -162,3 +162,7 @@ export async function getSystemSettings() {
 export async function updateSystemSettings(payload) {
   return request("math_bell.api.teacher.update_settings", payload);
 }
+
+export async function getStudentHomeInsights({ student_id }) {
+  return request("math_bell.api.analytics.student_home", { student_id });
+}

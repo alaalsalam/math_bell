@@ -1,6 +1,7 @@
 import frappe
 from frappe import _
 from frappe.utils import add_days, now_datetime
+from math_bell.utils.settings import get_mb_settings
 
 
 def _as_float(value, default=0.0):
@@ -36,7 +37,7 @@ def _build_recommendation(student_id: str, grade: str | None = None):
         WHERE s.student = %(student_id)s
         GROUP BY al.skill
         HAVING attempts >= 3
-        ORDER BY (correct / attempts) ASC, attempts DESC
+        ORDER BY (SUM(CASE WHEN al.is_correct = 1 THEN 1 ELSE 0 END) / COUNT(al.name)) ASC, COUNT(al.name) DESC
         LIMIT 1
         """,
         {"student_id": student_id},
@@ -483,5 +484,70 @@ def class_detail(class_group: str):
                 {"skill": row.get("skill"), "attempts": _as_int(row.get("attempts"))}
                 for row in most_practiced
             ],
+        },
+    }
+
+
+@frappe.whitelist(allow_guest=True)
+def student_home(student_id: str):
+    student_id = (student_id or "").strip()
+    if not student_id:
+        frappe.throw(_("student_id is required"))
+
+    student = frappe.db.get_value(
+        "MB Student Profile",
+        student_id,
+        ["name", "display_name", "grade", "is_active"],
+        as_dict=True,
+    )
+    if not student:
+        frappe.throw(_("Student '{0}' does not exist").format(student_id))
+
+    today_start = now_datetime().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    attempts_today = frappe.db.sql(
+        """
+        SELECT COUNT(al.name) AS attempts
+        FROM `tabMB Attempt Log` al
+        INNER JOIN `tabMB Session` s ON s.name = al.session
+        WHERE s.student = %(student_id)s
+          AND al.creation >= %(today_start)s
+        """,
+        {"student_id": student_id, "today_start": today_start},
+        as_dict=True,
+    )[0].get("attempts")
+
+    totals = frappe.db.sql(
+        """
+        SELECT COUNT(al.name) AS attempts,
+               SUM(CASE WHEN al.is_correct = 1 THEN 1 ELSE 0 END) AS correct
+        FROM `tabMB Attempt Log` al
+        INNER JOIN `tabMB Session` s ON s.name = al.session
+        WHERE s.student = %(student_id)s
+        """,
+        {"student_id": student_id},
+        as_dict=True,
+    )[0]
+
+    correct = _as_int(totals.get("correct"))
+    attempts = _as_int(totals.get("attempts"))
+    streak = max(0, min(20, correct // 5))
+    level = max(1, (correct // 30) + 1)
+
+    settings = get_mb_settings()
+    target_today = max(_as_int(settings.get("default_questions_per_session"), 10), 1)
+    recommended = _build_recommendation(student_id=student_id, grade=student.get("grade"))
+
+    return {
+        "ok": True,
+        "data": {
+            "student_id": student_id,
+            "attempts_today": _as_int(attempts_today),
+            "target_today": target_today,
+            "recommended_next_skill": recommended,
+            "streak": streak,
+            "level": level,
+            "accuracy_all_time": round((correct / max(attempts, 1)), 4) if attempts else 0,
+            "stars_total": _stars_from_accuracy((correct / max(attempts, 1)) if attempts else 0),
         },
     }
