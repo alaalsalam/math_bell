@@ -91,6 +91,12 @@ function HomePage() {
       {student?.display_name ? <p className="ok-text">{personalizedStart(student.display_name)}</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
 
+      <div className="teacher-mode-link-wrap">
+        <button type="button" className="teacher-link" onClick={() => navigate("/dashboard")}>
+          لوحة الطالب
+        </button>
+      </div>
+
       <div className="grid-buttons">
         {GRADES.map((item) => (
           <button

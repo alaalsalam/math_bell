@@ -234,6 +234,8 @@ def student_list(class_group: str | None = None, grade: str | None = None):
             sp.avatar_emoji,
             sp.grade,
             sp.class_group,
+            sp.level,
+            sp.current_streak,
             sp.last_login,
             MAX(COALESCE(s.started_at, s.creation)) AS last_session_at,
             COUNT(al.name) AS total_attempts,
@@ -242,7 +244,15 @@ def student_list(class_group: str | None = None, grade: str | None = None):
         LEFT JOIN `tabMB Session` s ON s.student = sp.name
         LEFT JOIN `tabMB Attempt Log` al ON al.session = s.name
         WHERE {' AND '.join(filters)}
-        GROUP BY sp.name, sp.display_name, sp.avatar_emoji, sp.grade, sp.class_group, sp.last_login
+        GROUP BY
+            sp.name,
+            sp.display_name,
+            sp.avatar_emoji,
+            sp.grade,
+            sp.class_group,
+            sp.level,
+            sp.current_streak,
+            sp.last_login
         ORDER BY sp.modified DESC
         """,
         values,
@@ -254,8 +264,8 @@ def student_list(class_group: str | None = None, grade: str | None = None):
         attempts = _as_int(row.get("total_attempts"))
         correct = _as_int(row.get("total_correct"))
         accuracy = round((correct / attempts), 4) if attempts else 0
-        level = max(1, (correct // 30) + 1)
-        streak = max(0, min(20, correct // 5))
+        level = _as_int(row.get("level")) or max(1, (correct // 20) + 1)
+        streak = _as_int(row.get("current_streak"))
 
         payload.append(
             {
@@ -553,7 +563,7 @@ def student_home(student_id: str):
     correct = _as_int(totals.get("correct"))
     attempts = _as_int(totals.get("attempts"))
     streak = max(0, min(20, correct // 5))
-    level = max(1, (correct // 30) + 1)
+    level = max(1, (correct // 20) + 1)
 
     settings = get_mb_settings()
     target_today = max(_as_int(settings.get("default_questions_per_session"), 10), 1)
@@ -601,6 +611,13 @@ def student_home(student_id: str):
             }
         )
 
+    student_stars = student.get("total_stars")
+    stars_total = (
+        _as_int(student_stars)
+        if student_stars is not None
+        else _stars_from_accuracy((correct / max(attempts, 1)) if attempts else 0)
+    )
+
     return {
         "ok": True,
         "data": {
@@ -612,7 +629,7 @@ def student_home(student_id: str):
             "level": _as_int(student.get("level") or level),
             "best_streak": _as_int(student.get("best_streak")),
             "accuracy_all_time": round((correct / max(attempts, 1)), 4) if attempts else 0,
-            "stars_total": _as_int(student.get("total_stars") or _stars_from_accuracy((correct / max(attempts, 1)) if attempts else 0)),
+            "stars_total": stars_total,
             "skills_mastery": skills_mastery,
         },
     }

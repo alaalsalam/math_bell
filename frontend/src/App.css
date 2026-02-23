@@ -7,11 +7,14 @@
 
 .page-card {
   width: min(980px, 100%);
-  border-radius: 24px;
+  border-radius: 30px;
   background: #ffffff;
   border: 1px solid #dbe3ef;
   box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
-  padding: 28px;
+  padding: 32px;
+  animation: card-in 0.35s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .student-topbar {
@@ -78,13 +81,13 @@
   padding: 20px;
   font-size: 1.2rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  background: linear-gradient(135deg, var(--sa-green), var(--sa-sky));
   color: #fff;
   cursor: pointer;
 }
 
 .big-btn.active {
-  background: linear-gradient(135deg, #0f766e, #14b8a6);
+  background: linear-gradient(135deg, var(--sa-gold), var(--sa-green));
 }
 
 .auth-switch {
@@ -121,7 +124,7 @@
 .stat-card,
 .class-card {
   border: 1px solid #dbe3ef;
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 14px;
   background: #f8fafc;
 }
@@ -152,7 +155,7 @@
 }
 
 .primary-btn {
-  background: #0284c7;
+  background: var(--sa-sky);
   color: #fff;
 }
 
@@ -162,7 +165,7 @@
 }
 
 .choice-btn {
-  background: #1d4ed8;
+  background: linear-gradient(135deg, var(--sa-sky), var(--sa-green));
   color: #fff;
   min-height: 52px;
   font-size: 1rem;
@@ -358,7 +361,7 @@
 .answer-drop-box {
   border: 2px dashed #60a5fa;
   background: #f0f9ff;
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 12px;
   margin: 12px 0;
   text-align: center;
@@ -700,3 +703,9 @@
 .mastery-fill.gray { background: #94a3b8; }
 .mastery-fill.orange { background: #f59e0b; }
 .mastery-fill.green { background: #16a34a; }
+
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
