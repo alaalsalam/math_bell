@@ -222,10 +222,16 @@ def forecast_student(student_id: str, window_days: int = 14):
             "mastery_threshold": mastery_threshold,
         }
 
-    student = frappe.get_doc("MB Student Profile", student_id)
-    existing = parse_doc_json(student.predictions_json)
+    existing = parse_doc_json(
+        frappe.db.get_value("MB Student Profile", student_id, "predictions_json")
+    )
     existing.update(predictions)
-    student.predictions_json = to_json_string(existing)
-    student.save(ignore_permissions=True)
+    frappe.db.set_value(
+        "MB Student Profile",
+        student_id,
+        "predictions_json",
+        to_json_string(existing),
+        update_modified=False,
+    )
 
     return predictions

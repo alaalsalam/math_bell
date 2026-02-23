@@ -1,6 +1,7 @@
 import frappe
 from frappe import _
 from frappe.utils import add_days, now_datetime
+from math_bell.api.forecast import compute_student_forecast_payload
 from math_bell.api.planner import ensure_current_week_plan
 from math_bell.utils.settings import get_mb_settings
 
@@ -444,6 +445,7 @@ def student_detail(student_id: str):
 
     best_streak_placeholder = max(_as_int(student.get("best_streak")), max(0, min(20, total_correct // 5)))
     weekly_plan = ensure_current_week_plan(student_id)
+    forecast = compute_student_forecast_payload(student_id=student_id, refresh=True, limit=10)
 
     return {
         "ok": True,
@@ -461,6 +463,11 @@ def student_detail(student_id: str):
             ],
             "recommended_focus": _recommended_focus_from_mistakes(top_mistake_rows),
             "weekly_plan": weekly_plan,
+            "forecast_summary": {
+                "risk_counts": forecast.get("risk_counts") or {"high": 0, "medium": 0, "low": 0},
+                "top_risk_skills": forecast.get("predictions", [])[:3],
+                "focus_today": forecast.get("focus_today", []),
+            },
             "reward_summary": {
                 "total_stars_earned": _as_int(student.get("total_stars") or total_stars_earned),
                 "current_streak": _as_int(student.get("current_streak")),
