@@ -378,6 +378,18 @@ def student_detail(student_id: str):
 
     recommendation = _build_recommendation(student_id=student_id, grade=student.get("grade"))
 
+    total_correct = 0
+    total_attempts = 0
+    for row in ranked:
+        total_correct += _as_int(row.get("correct"))
+        total_attempts += _as_int(row.get("attempts"))
+
+    total_stars_earned = 0
+    for session in sessions:
+        total_stars_earned += _stars_from_accuracy(_as_float(session.get("accuracy")))
+
+    best_streak_placeholder = max(0, min(20, total_correct // 5))
+
     return {
         "ok": True,
         "data": {
@@ -388,6 +400,13 @@ def student_detail(student_id: str):
             "weak_skills": weak_skills,
             "time_spent_seconds": total_time,
             "recommended_next_skill": recommendation,
+            "reward_summary": {
+                "total_stars_earned": total_stars_earned,
+                "best_streak": best_streak_placeholder,
+                "accuracy_all_time": round((total_correct / max(total_attempts, 1)), 4)
+                if total_attempts
+                else 0,
+            },
         },
     }
 

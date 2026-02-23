@@ -65,6 +65,8 @@ function TeacherStudentPage() {
       avgAccuracy,
       totalTime: Number(detail?.time_spent_seconds || 0),
       recommendation: detail?.recommended_next_skill || "-",
+      stars: Number(detail?.reward_summary?.total_stars_earned || 0),
+      bestStreak: Number(detail?.reward_summary?.best_streak || 0),
     };
   }, [timeline, detail]);
 
@@ -91,6 +93,14 @@ function TeacherStudentPage() {
             <article className="stat-card">
               <h3>المهارة المقترحة</h3>
               <p>{summary.recommendation}</p>
+            </article>
+            <article className="stat-card">
+              <h3>إجمالي النجوم</h3>
+              <p>{summary.stars}</p>
+            </article>
+            <article className="stat-card">
+              <h3>أفضل سلسلة</h3>
+              <p>{summary.bestStreak} 🔥</p>
             </article>
           </section>
 
