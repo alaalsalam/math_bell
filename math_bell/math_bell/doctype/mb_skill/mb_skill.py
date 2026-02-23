@@ -2,7 +2,7 @@ import frappe
 from frappe.model.document import Document
 
 from math_bell.utils.validators import ensure_link_exists
-from math_bell.api.helpers import parse_doc_json
+import json
 
 
 class MBSkill(Document):
@@ -26,6 +26,9 @@ class MBSkill(Document):
             frappe.throw("unlock_rule must be either 'by_mastery' or 'manual'")
 
         if self.prerequisites_json:
-            parsed = parse_doc_json(self.prerequisites_json)
+            try:
+                parsed = json.loads(self.prerequisites_json)
+            except Exception:
+                frappe.throw("prerequisites_json must be valid JSON")
             if not isinstance(parsed, list):
                 frappe.throw("prerequisites_json must be a JSON array of skill codes")
