@@ -124,6 +124,26 @@ def toggle_pack(pack_id: str, is_enabled: int | bool = 1):
 
 
 @frappe.whitelist(allow_guest=True)
+def toggle_skill_visibility(skill_id: str, show_in_student_app: int | bool = 1):
+    skill_id = (skill_id or "").strip()
+    if not skill_id:
+        frappe.throw(_("skill_id is required"))
+    if not frappe.db.exists("MB Skill", skill_id):
+        frappe.throw(_("Skill '{0}' does not exist").format(skill_id))
+
+    flag = 1 if normalize_bool(show_in_student_app) else 0
+    frappe.db.set_value("MB Skill", skill_id, "show_in_student_app", flag)
+
+    return {
+        "ok": True,
+        "data": {
+            "skill_id": skill_id,
+            "show_in_student_app": flag,
+        },
+    }
+
+
+@frappe.whitelist(allow_guest=True)
 def generate_pack(payload=None):
     data = parse_json_input(payload, "payload", required=True)
     if not isinstance(data, dict):

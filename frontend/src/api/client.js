@@ -207,3 +207,19 @@ export async function getStudentForecast({ student_id }) {
 export async function getTeacherRiskOverview() {
   return request("math_bell.api.forecast.teacher_risk_overview");
 }
+
+export async function listCurriculumPacks({ grade, domain } = {}) {
+  return request("math_bell.api.curriculum.list_packs", { grade, domain });
+}
+
+export async function toggleCurriculumPack({ pack_id, is_enabled }) {
+  return request("math_bell.api.curriculum.toggle_pack", { pack_id, is_enabled });
+}
+
+export async function generateCurriculumPack({ payload }) {
+  return request("math_bell.api.curriculum.generate_pack", { payload });
+}
+
+export async function toggleSkillVisibility({ skill_id, show_in_student_app }) {
+  return request("math_bell.api.curriculum.toggle_skill_visibility", { skill_id, show_in_student_app });
+}

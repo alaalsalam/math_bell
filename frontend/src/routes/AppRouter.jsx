@@ -12,6 +12,7 @@ import TeacherClassPage from "../pages/TeacherClassPage";
 import TeacherDashboardPage from "../pages/TeacherDashboardPage";
 import TeacherLeaderboardPage from "../pages/TeacherLeaderboardPage";
 import TeacherRiskPage from "../pages/TeacherRiskPage";
+import TeacherCurriculumPage from "../pages/TeacherCurriculumPage";
 import TeacherStudentPage from "../pages/TeacherStudentPage";
 import TeacherStudentsPage from "../pages/TeacherStudentsPage";
 import TeacherSettingsPage from "../pages/TeacherSettingsPage";
@@ -140,6 +141,14 @@ function AppRouter() {
           element={
             <RequireTeacherMode>
               <TeacherRiskPage />
+            </RequireTeacherMode>
+          }
+        />
+        <Route
+          path="/teacher/curriculum"
+          element={
+            <RequireTeacherMode>
+              <TeacherCurriculumPage />
             </RequireTeacherMode>
           }
         />
