@@ -56,6 +56,22 @@
    "unique": 1
   },
   {
+   "fieldname": "password_simple",
+   "fieldtype": "Data",
+   "label": "Password Simple",
+   "reqd": 1
+  },
+  {
+   "fieldname": "avatar_emoji",
+   "fieldtype": "Data",
+   "label": "Avatar Emoji"
+  },
+  {
+   "fieldname": "last_login",
+   "fieldtype": "Datetime",
+   "label": "Last Login"
+  },
+  {
    "fieldname": "avatar",
    "fieldtype": "Data",
    "label": "Avatar"
@@ -72,6 +88,9 @@
   "grade",
   "class_group",
   "student_code",
+  "password_simple",
+  "avatar_emoji",
+  "last_login",
   "avatar",
   "is_active"
  ],
