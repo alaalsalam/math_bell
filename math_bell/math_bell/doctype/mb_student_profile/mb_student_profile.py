@@ -31,5 +31,7 @@ class MBStudentProfile(Document):
             self.total_correct = 0
         if self.level is None or int(self.level or 0) < 1:
             self.level = 1
+        if not self.skill_levels_json:
+            self.skill_levels_json = "{}"
         if self.total_stars is None:
             self.total_stars = 0

@@ -112,6 +112,12 @@
    "default": "1"
   },
   {
+   "fieldname": "skill_levels_json",
+   "fieldtype": "Long Text",
+   "label": "Skill Levels JSON",
+   "default": "{}"
+  },
+  {
    "fieldname": "total_stars",
    "fieldtype": "Int",
    "label": "Total Stars",
@@ -133,6 +139,7 @@
   "best_streak",
   "total_correct",
   "level",
+  "skill_levels_json",
   "total_stars"
  ],
  "search_fields": "display_name,student_code"

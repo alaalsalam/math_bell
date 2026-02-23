@@ -236,6 +236,58 @@ def _update_student_on_attempt(session, is_correct: bool) -> None:
     student.save(ignore_permissions=True)
 
 
+def _clamp(value: int, minimum: int, maximum: int) -> int:
+    return max(minimum, min(maximum, value))
+
+
+def _update_student_skill_progress(session, attempts: int, correct: int) -> dict:
+    if not session.student or not session.skill:
+        return {}
+
+    student = frappe.get_doc("MB Student Profile", session.student)
+    skill_meta = frappe.db.get_value(
+        "MB Skill",
+        session.skill,
+        ["name", "code", "difficulty_min", "difficulty_max"],
+        as_dict=True,
+    )
+    if not skill_meta:
+        return {}
+
+    skill_key = skill_meta.get("code") or skill_meta.get("name") or session.skill
+    all_levels = parse_doc_json(student.skill_levels_json)
+    current = all_levels.get(skill_key) if isinstance(all_levels.get(skill_key), dict) else {}
+
+    previous_attempts = normalize_int(current.get("attempts"), 0)
+    previous_correct = normalize_int(current.get("correct"), 0)
+    total_attempts = previous_attempts + max(normalize_int(attempts, 0), 0)
+    total_correct = previous_correct + max(normalize_int(correct, 0), 0)
+    total_accuracy = round((total_correct / total_attempts), 4) if total_attempts else 0
+
+    min_level = max(normalize_int(skill_meta.get("difficulty_min"), 1), 1)
+    max_level = max(normalize_int(skill_meta.get("difficulty_max"), min_level), min_level)
+    current_level = _clamp(normalize_int(current.get("level"), min_level), min_level, max_level)
+
+    session_accuracy = round((correct / attempts), 4) if attempts else 0
+    if attempts:
+        if session_accuracy >= 0.8:
+            current_level += 1
+        elif session_accuracy <= 0.4:
+            current_level -= 1
+    current_level = _clamp(current_level, min_level, max_level)
+
+    all_levels[skill_key] = {
+        "level": current_level,
+        "attempts": total_attempts,
+        "correct": total_correct,
+        "accuracy": total_accuracy,
+    }
+    student.skill_levels_json = to_json_string(all_levels)
+    student.save(ignore_permissions=True)
+
+    return {"skill_code": skill_key, "skill_level": current_level, "skill_accuracy": total_accuracy}
+
+
 def _update_student_daily_continuity(student_name: str, stars: int) -> dict:
     student = frappe.get_doc("MB Student Profile", student_name)
 
@@ -496,6 +548,9 @@ def end_session(session_id: str):
 
     continuity = {}
     if session.student and not was_ended:
+        progress = _update_student_skill_progress(session, attempts, correct)
+        if progress:
+            report.update(progress)
         continuity = _update_student_daily_continuity(session.student, stars)
 
     earned_badges = evaluate_and_award_badges(session, report)
