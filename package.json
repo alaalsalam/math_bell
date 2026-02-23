@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "name": "math_bell",
+  "description": "React games platform inside Frappe",
+  "scripts": {
+    "postinstall": "cd frontend && npm install",
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "copy-html": "cd frontend && npm run copy-html-entry"
+  },
+  "dependencies": {}
+}

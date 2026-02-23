@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>جرس الرياضيات</title>
+    <meta name="description" content="منصة تعليم رياضيات للأطفال للصفين الأول والثاني." />
+  </head>
+  <body>
+    <noscript>
+      <strong>هذا التطبيق يتطلب JavaScript للعمل.</strong>
+    </noscript>
+
+    <div id="root"></div>
+
+    <script>
+      window.csrf_token = "{{ csrf_token }}";
+      if (!window.frappe) window.frappe = {};
+      frappe.boot = "{{ boot }}";
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
