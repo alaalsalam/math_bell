@@ -51,6 +51,8 @@ function TeacherStudentPage() {
   const timeline = detail?.sessions_timeline || [];
   const topSkills = detail?.top_skills || [];
   const weakSkills = detail?.weak_skills || [];
+  const topMistakes = detail?.top_mistakes_last_7d || [];
+  const recommendedFocus = detail?.recommended_focus || [];
 
   const summary = useMemo(() => {
     const sessions = timeline.length;
@@ -139,6 +141,29 @@ function TeacherStudentPage() {
               <button type="button" className="primary-btn" onClick={() => window.alert(`المقترح: ${summary.recommendation}`)}>
                 عرض التوصية
               </button>
+            </article>
+          </section>
+
+          <section className="teacher-block class-grid">
+            <article className="class-card">
+              <h3>أكثر أخطاء شائعة (آخر 7 أيام)</h3>
+              <ul>
+                {topMistakes.map((row, idx) => (
+                  <li key={`${row.mistake_type}-${idx}`}>
+                    {row.mistake_type}: {row.count}
+                  </li>
+                ))}
+                {topMistakes.length === 0 ? <li>لا توجد أخطاء كافية للتحليل.</li> : null}
+              </ul>
+            </article>
+            <article className="class-card">
+              <h3>اقتراح تدريب</h3>
+              <ul>
+                {recommendedFocus.map((item, idx) => (
+                  <li key={`${item}-${idx}`}>{item}</li>
+                ))}
+                {recommendedFocus.length === 0 ? <li>مراجعة قصيرة للمهارات الأساسية.</li> : null}
+              </ul>
             </article>
           </section>
 

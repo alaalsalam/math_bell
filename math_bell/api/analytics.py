@@ -27,6 +27,32 @@ def _stars_from_accuracy(accuracy):
     return 1
 
 
+_MISTAKE_RECOMMENDATIONS = {
+    "off_by_one": "تدريب على العد خطوة بخطوة لتجنب خطأ ±1",
+    "carry_missed": "تدريب على الحمل في الجمع العمودي",
+    "borrow_missed": "تدريب على الاستلاف في الطرح العمودي",
+    "place_value": "تدريب على قيمة المنزلة (آحاد/عشرات)",
+    "sign_confusion": "تثبيت الفرق بين الجمع والطرح بأمثلة بسيطة",
+    "fraction_parts": "تدريب على أجزاء الكسر (فوق/تحت)",
+    "fraction_compare": "تدريب على مقارنة الكسور بصريًا",
+    "random": "مراجعة بطيئة مع أمثلة أقصر",
+}
+
+
+def _recommended_focus_from_mistakes(mistake_rows, limit=3):
+    actions = []
+    for row in mistake_rows or []:
+        mistake_type = row.get("mistake_type")
+        action = _MISTAKE_RECOMMENDATIONS.get(mistake_type)
+        if action and action not in actions:
+            actions.append(action)
+        if len(actions) >= limit:
+            break
+    if not actions:
+        actions.append("مراجعة المهارات الأساسية بخطوات قصيرة")
+    return actions[:limit]
+
+
 def _build_recommendation(student_id: str, grade: str | None = None):
     weak = frappe.db.sql(
         """
@@ -352,6 +378,23 @@ def student_detail(student_id: str):
         {"student_id": student_id},
         as_dict=True,
     )
+    last_7_days = add_days(now_datetime(), -7)
+    top_mistake_rows = frappe.db.sql(
+        """
+        SELECT al.mistake_type, COUNT(al.name) AS count
+        FROM `tabMB Attempt Log` al
+        INNER JOIN `tabMB Session` s ON s.name = al.session
+        WHERE s.student = %(student_id)s
+          AND al.creation >= %(last_7_days)s
+          AND al.mistake_type IS NOT NULL
+          AND al.mistake_type NOT IN ('', 'none')
+        GROUP BY al.mistake_type
+        ORDER BY count DESC
+        LIMIT 7
+        """,
+        {"student_id": student_id, "last_7_days": last_7_days},
+        as_dict=True,
+    )
 
     ranked = []
     for row in skill_rows:
@@ -410,6 +453,11 @@ def student_detail(student_id: str):
             "weak_skills": weak_skills,
             "time_spent_seconds": total_time,
             "recommended_next_skill": recommendation,
+            "top_mistakes_last_7d": [
+                {"mistake_type": row.get("mistake_type"), "count": _as_int(row.get("count"))}
+                for row in top_mistake_rows
+            ],
+            "recommended_focus": _recommended_focus_from_mistakes(top_mistake_rows),
             "reward_summary": {
                 "total_stars_earned": _as_int(student.get("total_stars") or total_stars_earned),
                 "current_streak": _as_int(student.get("current_streak")),

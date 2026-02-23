@@ -3,6 +3,17 @@ from frappe import _
 from frappe.utils import add_days, get_datetime, now_datetime
 from math_bell.utils.settings import get_mb_settings
 
+_MISTAKE_RECOMMENDATIONS = {
+    "off_by_one": "تدريب على العد خطوة بخطوة لتجنب خطأ ±1",
+    "carry_missed": "تدريب على الحمل في الجمع العمودي",
+    "borrow_missed": "تدريب على الاستلاف في الطرح العمودي",
+    "place_value": "تدريب على قيمة المنزلة (آحاد/عشرات)",
+    "sign_confusion": "تثبيت الفرق بين الجمع والطرح بأمثلة بسيطة",
+    "fraction_parts": "تدريب على أجزاء الكسر (فوق/تحت)",
+    "fraction_compare": "تدريب على مقارنة الكسور بصريًا",
+    "random": "مراجعة بطيئة مع أمثلة أقصر",
+}
+
 
 def _parse_date_range(date_from=None, date_to=None):
     if date_from:
@@ -31,6 +42,19 @@ def _session_where_clause(alias="s", date_from=None, date_to=None):
         values["date_to"] = to_dt
 
     return " AND ".join(conditions), values
+
+
+def _recommended_focus_from_mistakes(mistake_rows, limit=3):
+    actions = []
+    for row in mistake_rows or []:
+        action = _MISTAKE_RECOMMENDATIONS.get(row.get("mistake_type"))
+        if action and action not in actions:
+            actions.append(action)
+        if len(actions) >= limit:
+            break
+    if not actions:
+        actions.append("مراجعة المهارات الأساسية بخطوات قصيرة")
+    return actions[:limit]
 
 
 @frappe.whitelist(allow_guest=True)
@@ -259,6 +283,23 @@ def student_report(student_id: str, date_from: str | None = None, date_to: str |
         values,
         as_dict=True,
     )
+    last_7_days = add_days(now_datetime(), -7)
+    top_mistake_rows = frappe.db.sql(
+        """
+        SELECT al.mistake_type, COUNT(al.name) AS count
+        FROM `tabMB Attempt Log` al
+        INNER JOIN `tabMB Session` s ON s.name = al.session
+        WHERE s.student = %(student_id)s
+          AND al.creation >= %(last_7_days)s
+          AND al.mistake_type IS NOT NULL
+          AND al.mistake_type NOT IN ('', 'none')
+        GROUP BY al.mistake_type
+        ORDER BY count DESC
+        LIMIT 7
+        """,
+        {"student_id": student_id, "last_7_days": last_7_days},
+        as_dict=True,
+    )
 
     return {
         "ok": True,
@@ -273,6 +314,11 @@ def student_report(student_id: str, date_from: str | None = None, date_to: str |
             "attempts": int(attempts_row.get("attempts") or 0),
             "correct": int(attempts_row.get("correct") or 0),
             "domain_breakdown": domain_breakdown,
+            "top_mistakes_last_7d": [
+                {"mistake_type": row.get("mistake_type"), "count": int(row.get("count") or 0)}
+                for row in top_mistake_rows
+            ],
+            "recommended_focus": _recommended_focus_from_mistakes(top_mistake_rows),
             "recent_sessions": [
                 {
                     "session_type": row.get("session_type"),
