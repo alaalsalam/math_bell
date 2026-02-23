@@ -58,11 +58,20 @@ export async function getBootstrap() {
   return request("math_bell.api.bootstrap.get_bootstrap");
 }
 
-export async function joinClass({ join_code, display_name, grade }) {
+export async function joinClass({ join_code, display_name, password_simple, grade, avatar_emoji }) {
   return request("math_bell.api.student_auth.join_class", {
     join_code,
     display_name,
+    password_simple,
     grade,
+    avatar_emoji,
+  });
+}
+
+export async function loginStudent({ display_name, password_simple }) {
+  return request("math_bell.api.student_auth.login_student", {
+    display_name,
+    password_simple,
   });
 }
 

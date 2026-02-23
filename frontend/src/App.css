@@ -14,6 +14,29 @@
   padding: 28px;
 }
 
+.student-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.student-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #e2e8f0;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 700;
+}
+
+.avatar {
+  font-size: 1.2rem;
+}
+
 .page-card h1 {
   margin: 0 0 6px;
   font-size: clamp(1.6rem, 3vw, 2.2rem);
@@ -55,6 +78,21 @@
   border-radius: 16px;
   padding: 16px;
   background: #f8fafc;
+}
+
+.auth-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.active-switch {
+  outline: 2px solid #0284c7;
+}
+
+.auth-form {
+  display: grid;
+  gap: 10px;
 }
 
 .join-box h2 {
