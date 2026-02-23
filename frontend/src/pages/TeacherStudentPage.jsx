@@ -53,6 +53,7 @@ function TeacherStudentPage() {
   const weakSkills = detail?.weak_skills || [];
   const topMistakes = detail?.top_mistakes_last_7d || [];
   const recommendedFocus = detail?.recommended_focus || [];
+  const weeklyPlan = detail?.weekly_plan || null;
 
   const summary = useMemo(() => {
     const sessions = timeline.length;
@@ -165,6 +166,28 @@ function TeacherStudentPage() {
                 {recommendedFocus.length === 0 ? <li>مراجعة قصيرة للمهارات الأساسية.</li> : null}
               </ul>
             </article>
+          </section>
+
+          <section className="teacher-block class-card">
+            <h3>الخطة الأسبوعية</h3>
+            <p>
+              من {weeklyPlan?.week_start || "-"} إلى {weeklyPlan?.week_end || "-"}
+            </p>
+            <p>نسبة الإنجاز: {Math.round(Number(weeklyPlan?.completion_rate || 0))}%</p>
+            <p>الالتزام: {weeklyPlan?.days_completed || 0} / 5</p>
+            <div className="class-grid">
+              {[1, 2, 3, 4, 5].map((dayNo) => {
+                const day = weeklyPlan?.plan?.[`day_${dayNo}`] || {};
+                return (
+                  <article className="class-card" key={`teacher-plan-day-${dayNo}`}>
+                    <h4>اليوم {dayNo}</h4>
+                    <p>{day.title_ar || "مراجعة عامة"}</p>
+                    <p>التركيز: {day.focus || "-"}</p>
+                    <p>{day.completed ? "✔ مكتمل" : "غير مكتمل"}</p>
+                  </article>
+                );
+              })}
+            </div>
           </section>
 
           <section className="teacher-block class-card">
