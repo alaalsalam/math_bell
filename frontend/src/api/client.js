@@ -174,3 +174,10 @@ export async function getDailyChallenge({ student_id }) {
 export async function startDailyChallenge({ student_id, ui }) {
   return request("math_bell.api.challenges.start_daily_challenge", { student_id, ui });
 }
+
+export async function getWeeklyLeaderboard({ grade, class_group } = {}) {
+  return request("math_bell.api.leaderboards.weekly_leaderboard", {
+    grade,
+    class_group,
+  });
+}

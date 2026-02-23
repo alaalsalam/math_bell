@@ -10,6 +10,7 @@ import RunnerPage from "../pages/RunnerPage";
 import SkillsPage from "../pages/SkillsPage";
 import TeacherClassPage from "../pages/TeacherClassPage";
 import TeacherDashboardPage from "../pages/TeacherDashboardPage";
+import TeacherLeaderboardPage from "../pages/TeacherLeaderboardPage";
 import TeacherStudentPage from "../pages/TeacherStudentPage";
 import TeacherStudentsPage from "../pages/TeacherStudentsPage";
 import TeacherSettingsPage from "../pages/TeacherSettingsPage";
@@ -122,6 +123,14 @@ function AppRouter() {
           element={
             <RequireTeacherMode>
               <TeacherSettingsPage />
+            </RequireTeacherMode>
+          }
+        />
+        <Route
+          path="/teacher/leaderboard"
+          element={
+            <RequireTeacherMode>
+              <TeacherLeaderboardPage />
             </RequireTeacherMode>
           }
         />

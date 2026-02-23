@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "../components/PageShell";
-import { getDailyChallenge, getStudentHomeInsights } from "../api/client";
+import { getDailyChallenge, getStudentHomeInsights, getWeeklyLeaderboard } from "../api/client";
 import { getTimeGreeting } from "../saudi/greetings";
 import { getDailyTip } from "../saudi/tips";
 import { getStoredStudent } from "../utils/storage";
@@ -13,6 +13,7 @@ function DashboardPage() {
   const [error, setError] = useState("");
   const [insight, setInsight] = useState(null);
   const [dailyChallenge, setDailyChallenge] = useState(null);
+  const [weeklyTop, setWeeklyTop] = useState([]);
 
   useEffect(() => {
     let alive = true;
@@ -25,11 +26,13 @@ function DashboardPage() {
     Promise.all([
       getStudentHomeInsights({ student_id: student.student_id }),
       getDailyChallenge({ student_id: student.student_id }),
+      getWeeklyLeaderboard({ grade: student.grade || undefined }),
     ])
-      .then(([homeRes, challengeRes]) => {
+      .then(([homeRes, challengeRes, leaderboardRes]) => {
         if (!alive) return;
         setInsight(homeRes?.data || null);
         setDailyChallenge(challengeRes?.data || null);
+        setWeeklyTop((leaderboardRes?.data?.leaderboard || []).slice(0, 5));
       })
       .catch((err) => {
         if (!alive) return;
@@ -89,6 +92,16 @@ function DashboardPage() {
             <h3>نصيحة اليوم</h3>
             <p>{tip}</p>
             <p>اقتراح اليوم: {insight.recommended_next_skill || "ابدأ بأي مهارة"}</p>
+          </section>
+
+          <section className="teacher-block class-card">
+            <h3>لوحة الشرف الأسبوعية 👑</h3>
+            {(weeklyTop || []).map((row, idx) => (
+              <p key={row.name || idx}>
+                {idx + 1}. {row.avatar_emoji || "😀"} {row.display_name} - {row.points} نقطة
+              </p>
+            ))}
+            {(weeklyTop || []).length === 0 ? <p>لا توجد بيانات أسبوعية بعد.</p> : null}
           </section>
 
           <section className="teacher-block class-card">

@@ -162,6 +162,9 @@ function TeacherDashboardPage() {
               <Link className="teacher-link" to="/teacher/settings">
                 إعدادات النظام
               </Link>
+              <Link className="teacher-link" to="/teacher/leaderboard">
+                لوحة الشرف الأسبوعية
+              </Link>
             </div>
           </section>
 
