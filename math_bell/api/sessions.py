@@ -1,0 +1,241 @@
+import json
+
+import frappe
+from frappe import _
+from frappe.utils import now_datetime, time_diff_in_seconds
+
+from math_bell.api.helpers import (
+    ensure_active_link,
+    normalize_bool,
+    normalize_int,
+    parse_doc_json,
+    parse_json_input,
+    to_json_string,
+    validate_skill_belongs_to_grade_domain,
+)
+
+
+def _get_question_candidates(skill: str | None, grade: str, domain: str, limit: int = 12) -> list[dict]:
+    filters: dict = {"is_active": 1}
+
+    if skill:
+        filters["skill"] = skill
+    else:
+        skills = frappe.get_all(
+            "MB Skill",
+            filters={"is_active": 1, "grade": grade, "domain": domain},
+            pluck="name",
+            limit_page_length=500,
+        )
+        if not skills:
+            return []
+        filters["skill"] = ["in", skills]
+
+    rows = frappe.get_all(
+        "MB Question Bank",
+        filters=filters,
+        fields=["name", "skill", "template", "difficulty", "question_json"],
+        order_by="difficulty asc, creation asc",
+        limit_page_length=limit,
+    )
+
+    payload = []
+    for row in rows:
+        try:
+            question = json.loads(row.get("question_json") or "{}")
+        except Exception:
+            question = {}
+        payload.append(
+            {
+                "question_ref": row.get("name"),
+                "skill": row.get("skill"),
+                "template": row.get("template"),
+                "difficulty": row.get("difficulty"),
+                "question": question,
+            }
+        )
+    return payload
+
+
+def _build_stats_dict(stats_json: str | None) -> dict:
+    stats = parse_doc_json(stats_json)
+    return {
+        "attempts": normalize_int(stats.get("attempts"), 0),
+        "correct": normalize_int(stats.get("correct"), 0),
+        "accuracy": float(stats.get("accuracy") or 0),
+    }
+
+
+def _update_stats(stats: dict, is_correct: bool) -> dict:
+    attempts = normalize_int(stats.get("attempts"), 0) + 1
+    correct = normalize_int(stats.get("correct"), 0) + (1 if is_correct else 0)
+    accuracy = (correct / attempts) if attempts else 0
+    return {
+        "attempts": attempts,
+        "correct": correct,
+        "accuracy": round(accuracy, 4),
+    }
+
+
+def _calc_stars(accuracy: float) -> int:
+    if accuracy >= 0.9:
+        return 3
+    if accuracy >= 0.7:
+        return 2
+    if accuracy >= 0.5:
+        return 1
+    return 0
+
+
+@frappe.whitelist(allow_guest=True)
+def start_session(
+    session_type: str,
+    grade: str,
+    domain: str,
+    skill: str | None = None,
+    student: str | None = None,
+    duration_seconds: int | None = None,
+):
+    session_type = (session_type or "").strip()
+    grade = (grade or "").strip()
+    domain = (domain or "").strip()
+    skill = (skill or "").strip() or None
+    student = (student or "").strip() or None
+
+    if session_type not in {"practice", "bell_session"}:
+        frappe.throw(_("Invalid session_type. Allowed values: practice, bell_session"))
+
+    ensure_active_link("MB Grade", grade, "Grade")
+    ensure_active_link("MB Domain", domain, "Domain")
+
+    if skill:
+        validate_skill_belongs_to_grade_domain(skill, grade, domain)
+    if student:
+        ensure_active_link("MB Student Profile", student, "Student")
+
+    doc = frappe.get_doc(
+        {
+            "doctype": "MB Session",
+            "session_type": session_type,
+            "grade": grade,
+            "domain": domain,
+            "skill": skill,
+            "student": student,
+            "started_at": now_datetime(),
+            "duration_seconds": normalize_int(duration_seconds, 0) or None,
+            "status": "active",
+            "stats_json": to_json_string({"attempts": 0, "correct": 0, "accuracy": 0}),
+        }
+    )
+    doc.insert(ignore_permissions=True)
+
+    questions = _get_question_candidates(skill=skill, grade=grade, domain=domain, limit=12)
+
+    return {
+        "ok": True,
+        "data": {
+            "session_id": doc.name,
+            "questions": questions,
+        },
+    }
+
+
+@frappe.whitelist(allow_guest=True)
+def submit_attempt(
+    session_id: str,
+    skill: str,
+    question_ref: str | None = None,
+    given_answer_json=None,
+    is_correct: int | bool = 0,
+    time_ms: int | str | None = None,
+    hint_used: int | bool = 0,
+):
+    session_id = (session_id or "").strip()
+    skill = (skill or "").strip()
+    question_ref = (question_ref or "").strip() or None
+
+    if not session_id:
+        frappe.throw(_("session_id is required"))
+    if not skill:
+        frappe.throw(_("skill is required"))
+
+    session = frappe.get_doc("MB Session", session_id)
+    if session.status != "active":
+        frappe.throw(_("Session '{0}' is not active").format(session.name))
+
+    validate_skill_belongs_to_grade_domain(skill, session.grade, session.domain)
+
+    parsed_answer = parse_json_input(given_answer_json, "given_answer_json", required=False)
+    is_correct_bool = normalize_bool(is_correct)
+    hint_used_bool = normalize_bool(hint_used)
+
+    attempt = frappe.get_doc(
+        {
+            "doctype": "MB Attempt Log",
+            "session": session.name,
+            "skill": skill,
+            "question_ref": question_ref,
+            "given_answer_json": to_json_string(parsed_answer),
+            "is_correct": 1 if is_correct_bool else 0,
+            "time_ms": max(normalize_int(time_ms, 0), 0),
+            "hint_used": 1 if hint_used_bool else 0,
+            "created_at": now_datetime(),
+        }
+    )
+    attempt.insert(ignore_permissions=True)
+
+    stats = _build_stats_dict(session.stats_json)
+    stats = _update_stats(stats, is_correct_bool)
+    session.stats_json = to_json_string(stats)
+    session.save(ignore_permissions=True)
+
+    return {"ok": True, "data": {"session_id": session.name, "stats": stats}}
+
+
+@frappe.whitelist(allow_guest=True)
+def end_session(session_id: str):
+    session_id = (session_id or "").strip()
+    if not session_id:
+        frappe.throw(_("session_id is required"))
+
+    session = frappe.get_doc("MB Session", session_id)
+
+    if session.skill:
+        validate_skill_belongs_to_grade_domain(session.skill, session.grade, session.domain)
+
+    ended_at = now_datetime()
+    started_at = session.started_at or ended_at
+    duration_seconds = max(int(time_diff_in_seconds(ended_at, started_at)), 0)
+
+    if session.status != "ended":
+        session.ended_at = ended_at
+        session.duration_seconds = duration_seconds
+        session.status = "ended"
+
+    stats = _build_stats_dict(session.stats_json)
+    attempts = stats.get("attempts", 0)
+    correct = stats.get("correct", 0)
+    accuracy = round((correct / attempts), 4) if attempts else 0
+    stars = _calc_stars(accuracy)
+
+    report = {
+        "attempts": attempts,
+        "correct": correct,
+        "accuracy": accuracy,
+        "duration_seconds": session.duration_seconds or duration_seconds,
+        "stars": stars,
+        "common_mistake": "سيتم إضافة تحليل الأخطاء قريباً",
+    }
+
+    session.stats_json = to_json_string(
+        {
+            "attempts": attempts,
+            "correct": correct,
+            "accuracy": accuracy,
+            "stars": stars,
+        }
+    )
+    session.save(ignore_permissions=True)
+
+    return {"ok": True, "data": {"session_id": session.name, "report": report}}
+
