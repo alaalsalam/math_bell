@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { loadBootstrap } from "../utils/bootstrapCache";
+import { getStoredStudent } from "../utils/storage";
 
 const DOMAIN_LABELS = {
   Addition: "الجمع",
@@ -29,13 +30,14 @@ function SkillsPage() {
   const [error, setError] = useState("");
   const [skills, setSkills] = useState([]);
   const [selectedUi, setSelectedUi] = useState("mcq");
+  const student = getStoredStudent();
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setError("");
 
-    loadBootstrap()
+    loadBootstrap({ studentId: student?.student_id || null })
       .then((data) => {
         if (!alive) return;
         const allSkills = data?.skills || [];
@@ -57,7 +59,7 @@ function SkillsPage() {
     return () => {
       alive = false;
     };
-  }, [grade, domain]);
+  }, [grade, domain, student?.student_id]);
 
   const subtitle = useMemo(
     () => `${GRADE_LABELS[grade] || ""} - ${DOMAIN_LABELS[domain] || domain || ""}`,

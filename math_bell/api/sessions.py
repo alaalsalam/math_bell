@@ -140,7 +140,12 @@ def _get_student_context(student: str | None, skill: str | None) -> dict:
 
     if skill:
         skill_levels = parse_doc_json(student_row.get("skill_levels_json") if has_skill_levels_json else None)
-        skill_entry = skill_levels.get(skill, {}) if isinstance(skill_levels, dict) else {}
+        skill_code = frappe.db.get_value("MB Skill", skill, "code") if skill else None
+        skill_entry = {}
+        if isinstance(skill_levels, dict):
+            skill_entry = (
+                skill_levels.get(skill_code) or skill_levels.get(skill) or {}
+            )
         if skill_entry.get("level") is not None:
             context["level"] = normalize_int(skill_entry.get("level"), context["level"])
 
@@ -285,7 +290,76 @@ def _update_student_skill_progress(session, attempts: int, correct: int) -> dict
     student.skill_levels_json = to_json_string(all_levels)
     student.save(ignore_permissions=True)
 
-    return {"skill_code": skill_key, "skill_level": current_level, "skill_accuracy": total_accuracy}
+    return {
+        "skill_name": skill_meta.get("name"),
+        "skill_code": skill_key,
+        "skill_level": current_level,
+        "skill_accuracy": total_accuracy,
+        "skill_attempts": total_attempts,
+    }
+
+
+def _unlock_next_skill_if_mastered(session, progress: dict) -> dict:
+    if not session.student or not session.skill:
+        return {}
+    if not isinstance(progress, dict):
+        return {}
+
+    skill_accuracy = float(progress.get("skill_accuracy") or 0)
+    skill_attempts = normalize_int(progress.get("skill_attempts"), 0)
+    if skill_attempts <= 0:
+        return {}
+
+    current_skill = frappe.db.get_value(
+        "MB Skill",
+        session.skill,
+        ["name", "code", "grade", "domain", "`order`", "mastery_threshold"],
+        as_dict=True,
+    )
+    if not current_skill:
+        return {}
+
+    mastery_threshold = float(current_skill.get("mastery_threshold") or 0.7)
+    if skill_accuracy < mastery_threshold:
+        return {}
+
+    next_skills = frappe.get_all(
+        "MB Skill",
+        filters={
+            "is_active": 1,
+            "show_in_student_app": 1,
+            "grade": current_skill.get("grade"),
+            "domain": current_skill.get("domain"),
+            "order": [">", normalize_int(current_skill.get("order"), 0)],
+        },
+        fields=["name", "code", "title_ar", "min_level_required", "order"],
+        order_by="`order` asc, creation asc",
+        limit_page_length=1,
+    )
+    if not next_skills:
+        return {}
+
+    next_skill = next_skills[0]
+    student_level = normalize_int(
+        frappe.db.get_value("MB Student Profile", session.student, "level"),
+        1,
+    )
+    if student_level < normalize_int(next_skill.get("min_level_required"), 1):
+        return {"unlocked_next": False, "next_skill_code": next_skill.get("code")}
+
+    student = frappe.get_doc("MB Student Profile", session.student)
+    all_levels = parse_doc_json(student.skill_levels_json)
+    next_key = next_skill.get("code") or next_skill.get("name")
+    entry = all_levels.get(next_key) if isinstance(all_levels.get(next_key), dict) else {}
+    entry["unlocked"] = 1
+    all_levels[next_key] = entry
+    student.skill_levels_json = to_json_string(all_levels)
+    student.save(ignore_permissions=True)
+    return {
+        "unlocked_next": True,
+        "next_skill_code": next_skill.get("code"),
+        "next_skill_title_ar": next_skill.get("title_ar"),
+    }
 
 
 def _update_student_daily_continuity(student_name: str, stars: int) -> dict:
@@ -551,6 +625,9 @@ def end_session(session_id: str):
         progress = _update_student_skill_progress(session, attempts, correct)
         if progress:
             report.update(progress)
+            unlock_result = _unlock_next_skill_if_mastered(session, progress)
+            if unlock_result:
+                report.update(unlock_result)
         continuity = _update_student_daily_continuity(session.student, stars)
 
     earned_badges = evaluate_and_award_badges(session, report)

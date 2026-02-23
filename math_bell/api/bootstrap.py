@@ -2,10 +2,69 @@ import frappe
 from math_bell.utils.settings import get_mb_settings
 
 
+def _as_int(value, default=0):
+    try:
+        return int(value)
+    except Exception:
+        return default
+
+
+def _as_bool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return bool(value)
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _parse_json_dict(value):
+    if not value:
+        return {}
+    if isinstance(value, dict):
+        return value
+    try:
+        import json
+
+        parsed = json.loads(value)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+
+
+def _load_student_skill_state(student_id: str | None) -> tuple[int, dict]:
+    if not student_id or not frappe.db.exists("MB Student Profile", student_id):
+        return 0, {}
+    student = frappe.db.get_value(
+        "MB Student Profile",
+        student_id,
+        ["level", "skill_levels_json"],
+        as_dict=True,
+    )
+    if not student:
+        return 0, {}
+    return _as_int(student.get("level"), 1), _parse_json_dict(student.get("skill_levels_json"))
+
+
+def _is_mastered(entry: dict, threshold: float) -> bool:
+    attempts = _as_int(entry.get("attempts"), 0)
+    if attempts <= 0:
+        return False
+    try:
+        accuracy = float(entry.get("accuracy") or 0)
+    except Exception:
+        accuracy = 0
+    return accuracy >= float(threshold or 0.7)
+
+
 @frappe.whitelist(allow_guest=True)
-def get_bootstrap():
+def get_bootstrap(student_id: str | None = None):
+    student_id = (student_id or "").strip() or None
     settings = get_mb_settings()
     enabled_engines = settings.get("enabled_game_engines") or ["mcq"]
+    student_level, student_skill_levels = _load_student_skill_state(student_id)
+    use_locking = bool(student_id and frappe.db.exists("MB Student Profile", student_id))
 
     grades = frappe.get_all(
         "MB Grade",
@@ -33,6 +92,8 @@ def get_bootstrap():
             "mastery_threshold",
             "is_featured",
             "min_level_required",
+            "adaptive_enabled",
+            "generator_type",
         ],
         order_by="grade asc, domain asc, `order` asc, creation asc",
     )
@@ -50,29 +111,70 @@ def get_bootstrap():
         order_by="creation asc",
     )
 
-    skill_map: dict[str, dict[str, list[dict]]] = {}
-    question_count_map = {
+    question_count_map: dict[str, int] = {
         row.get("skill"): int(row.get("question_count") or 0) for row in skill_question_counts
     }
+    grouped_skills: dict[tuple[str, str], list[dict]] = {}
     for row in skills:
-        grade_key = row.get("grade")
-        domain_key = row.get("domain")
-        question_count = question_count_map.get(row.get("name"), 0)
-        if settings.get("show_only_skills_with_questions") and question_count <= 0:
-            continue
-        skill_map.setdefault(grade_key, {}).setdefault(domain_key, []).append(
-            {
-                "name": row.get("name"),
-                "code": row.get("code"),
+        grouped_skills.setdefault((row.get("grade"), row.get("domain")), []).append(row)
+
+    visible_skill_names = set()
+    skill_map: dict[str, dict[str, list[dict]]] = {}
+    visible_skills: list[dict] = []
+    for (grade_key, domain_key), rows in grouped_skills.items():
+        previous_mastered = False
+        for index, row in enumerate(rows):
+            skill_name = row.get("name")
+            skill_code = row.get("code")
+            question_count = question_count_map.get(skill_name, 0)
+            has_generated_content = _as_bool(row.get("adaptive_enabled")) and (
+                (row.get("generator_type") or "static") != "static"
+            )
+            if settings.get("show_only_skills_with_questions") and question_count <= 0 and not has_generated_content:
+                continue
+
+            entry = {}
+            if isinstance(student_skill_levels, dict):
+                entry = student_skill_levels.get(skill_code) or student_skill_levels.get(skill_name) or {}
+
+            min_level_required = _as_int(row.get("min_level_required"), 1)
+            explicit_unlocked = _as_bool(entry.get("unlocked")) if isinstance(entry, dict) else False
+            mastered = _is_mastered(entry if isinstance(entry, dict) else {}, row.get("mastery_threshold") or 0.7)
+
+            if use_locking:
+                if index == 0:
+                    unlocked = student_level >= min_level_required
+                else:
+                    unlocked = student_level >= min_level_required and (explicit_unlocked or previous_mastered)
+            else:
+                unlocked = True
+
+            previous_mastered = mastered
+            if use_locking and not unlocked:
+                continue
+
+            skill_item = {
+                "name": skill_name,
+                "code": skill_code,
                 "title_ar": row.get("title_ar"),
                 "description_ar": row.get("description_ar"),
                 "order": row.get("skill_order"),
                 "mastery_threshold": row.get("mastery_threshold"),
                 "is_featured": row.get("is_featured"),
-                "min_level_required": row.get("min_level_required"),
+                "min_level_required": min_level_required,
                 "question_count": question_count,
+                "generated_content": has_generated_content,
+                "is_unlocked": unlocked,
             }
-        )
+            visible_skill_names.add(skill_name)
+            visible_skills.append({**row, **skill_item})
+            skill_map.setdefault(grade_key, {}).setdefault(domain_key, []).append(skill_item)
+
+    for grade_key, domain_data in skill_map.items():
+        for domain_key in domain_data:
+            domain_data[domain_key] = sorted(
+                domain_data[domain_key], key=lambda item: (_as_int(item.get("order"), 0), item.get("name") or "")
+            )
 
     skills_tree = []
     for grade in grades:
@@ -102,13 +204,8 @@ def get_bootstrap():
             "grades": grades,
             "domains": domains,
             "skills": [
-                {
-                    **row,
-                    "question_count": question_count_map.get(row.get("name"), 0),
-                }
-                for row in skills
-                if not settings.get("show_only_skills_with_questions")
-                or question_count_map.get(row.get("name"), 0) > 0
+                row
+                for row in visible_skills
             ],
             "skills_tree": skills_tree,
             "game_templates": templates,
@@ -121,6 +218,7 @@ def get_bootstrap():
                 "allow_guest_play": settings.get("allow_guest_play"),
                 "show_only_skills_with_questions": settings.get("show_only_skills_with_questions"),
                 "enabled_game_engines": enabled_engines,
+                "student_level": student_level if use_locking else None,
             },
         },
     }
