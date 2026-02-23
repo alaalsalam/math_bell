@@ -3,11 +3,12 @@ import RequireStudent from "../components/RequireStudent";
 import RequireTeacherMode from "../components/RequireTeacherMode";
 import DomainPage from "../pages/DomainPage";
 import DashboardPage from "../pages/DashboardPage";
-import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
 import ReportPage from "../pages/ReportPage";
 import RunnerPage from "../pages/RunnerPage";
 import SkillsPage from "../pages/SkillsPage";
+import WelcomePage from "../pages/WelcomePage";
+import WorldMapPage from "../pages/WorldMapPage";
 import TeacherClassPage from "../pages/TeacherClassPage";
 import TeacherDashboardPage from "../pages/TeacherDashboardPage";
 import TeacherLeaderboardPage from "../pages/TeacherLeaderboardPage";
@@ -27,7 +28,23 @@ function AppRouter() {
           path="/"
           element={
             <RequireStudent>
-              <HomePage />
+              <Navigate to="/welcome" replace />
+            </RequireStudent>
+          }
+        />
+        <Route
+          path="/welcome"
+          element={
+            <RequireStudent>
+              <WelcomePage />
+            </RequireStudent>
+          }
+        />
+        <Route
+          path="/world"
+          element={
+            <RequireStudent>
+              <WorldMapPage />
             </RequireStudent>
           }
         />

@@ -18,7 +18,7 @@ function LoginPage() {
   useEffect(() => {
     const existing = getStoredStudent();
     if (existing?.student_id) {
-      navigate("/", { replace: true });
+      navigate("/welcome", { replace: true });
     }
   }, [navigate]);
 
@@ -50,7 +50,7 @@ function LoginPage() {
       }
 
       saveStudent(student);
-      navigate("/", { replace: true });
+      navigate("/welcome", { replace: true });
     } catch (err) {
       setError(err.message || "بيانات غير صحيحة");
     } finally {
@@ -77,7 +77,7 @@ function LoginPage() {
       }
 
       saveStudent(student);
-      navigate("/", { replace: true });
+      navigate("/welcome", { replace: true });
     } catch (err) {
       setError(err.message || "فشل التسجيل");
     } finally {
