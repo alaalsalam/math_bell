@@ -298,3 +298,22 @@
   border-top: 2px solid #334155;
   margin: 4px 0;
 }
+
+.fraction-visual {
+  margin-top: 12px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
+}
+
+.fraction-part {
+  height: 38px;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  background: #e2e8f0;
+}
+
+.fraction-part.filled {
+  background: #22c55e;
+  border-color: #16a34a;
+}
