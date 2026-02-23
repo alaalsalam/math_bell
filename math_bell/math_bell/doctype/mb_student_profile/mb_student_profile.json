@@ -118,6 +118,12 @@
    "default": "{}"
   },
   {
+   "fieldname": "predictions_json",
+   "fieldtype": "Long Text",
+   "label": "Predictions JSON",
+   "default": "{}"
+  },
+  {
    "fieldname": "total_stars",
    "fieldtype": "Int",
    "label": "Total Stars",
@@ -140,6 +146,7 @@
   "total_correct",
   "level",
   "skill_levels_json",
+  "predictions_json",
   "total_stars"
  ],
  "search_fields": "display_name,student_code"

@@ -33,5 +33,7 @@ class MBStudentProfile(Document):
             self.level = 1
         if not self.skill_levels_json:
             self.skill_levels_json = "{}"
+        if not self.predictions_json:
+            self.predictions_json = "{}"
         if self.total_stars is None:
             self.total_stars = 0
