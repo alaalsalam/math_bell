@@ -14,6 +14,7 @@ from math_bell.api.helpers import (
     validate_skill_belongs_to_grade_domain,
 )
 from math_bell.badges.rules import evaluate_and_award_badges
+from math_bell.generator import generate_questions
 
 
 def _question_ui_matches(question: dict, ui: str) -> bool:
@@ -76,6 +77,121 @@ def _get_question_candidates(
             break
 
     return payload
+
+
+def _extract_answer_value(answer):
+    if isinstance(answer, dict):
+        if "value" in answer:
+            return answer.get("value")
+        if "answer" in answer:
+            return answer.get("answer")
+        if "correct_answer" in answer:
+            return answer.get("correct_answer")
+    return answer
+
+
+def _normalize_answer_value(value):
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+    if value is None:
+        return ""
+    return str(value)
+
+
+def _is_answer_correct(given_answer, expected_answer) -> bool:
+    if isinstance(expected_answer, dict) and isinstance(expected_answer.get("correct_choices"), list):
+        current_value = given_answer.get("value") if isinstance(given_answer, dict) else given_answer
+        normalized_current = _normalize_answer_value(current_value)
+        valid = [_normalize_answer_value(item) for item in expected_answer.get("correct_choices") or []]
+        return normalized_current in valid
+
+    given_value = given_answer.get("value") if isinstance(given_answer, dict) else given_answer
+    expected_value = _extract_answer_value(expected_answer)
+    return _normalize_answer_value(given_value) == _normalize_answer_value(expected_value)
+
+
+def _get_student_context(student: str | None, skill: str | None) -> dict:
+    context = {
+        "level": 1,
+        "accuracy_last_5": 0,
+        "current_streak": 0,
+        "total_correct": 0,
+    }
+    if not student:
+        return context
+
+    fields = ["level", "current_streak", "total_correct"]
+    has_skill_levels_json = frappe.db.has_column("MB Student Profile", "skill_levels_json")
+    if has_skill_levels_json:
+        fields.append("skill_levels_json")
+
+    student_row = frappe.db.get_value(
+        "MB Student Profile",
+        student,
+        fields,
+        as_dict=True,
+    )
+    if not student_row:
+        return context
+
+    context["level"] = normalize_int(student_row.get("level"), 1)
+    context["current_streak"] = normalize_int(student_row.get("current_streak"), 0)
+    context["total_correct"] = normalize_int(student_row.get("total_correct"), 0)
+
+    if skill:
+        skill_levels = parse_doc_json(student_row.get("skill_levels_json") if has_skill_levels_json else None)
+        skill_entry = skill_levels.get(skill, {}) if isinstance(skill_levels, dict) else {}
+        if skill_entry.get("level") is not None:
+            context["level"] = normalize_int(skill_entry.get("level"), context["level"])
+
+    rows = frappe.db.sql(
+        """
+        SELECT al.is_correct
+        FROM `tabMB Attempt Log` al
+        INNER JOIN `tabMB Session` s ON s.name = al.session
+        WHERE s.student = %(student)s
+        {skill_filter}
+        ORDER BY al.creation DESC
+        LIMIT 5
+        """.format(skill_filter="AND al.skill = %(skill)s" if skill else ""),
+        {"student": student, "skill": skill},
+        as_dict=True,
+    )
+    if rows:
+        correct = sum(1 for row in rows if int(row.get("is_correct") or 0) == 1)
+        context["accuracy_last_5"] = round(correct / len(rows), 4)
+
+    return context
+
+
+def _to_client_questions(questions: list[dict]) -> tuple[list[dict], dict]:
+    output = []
+    answer_map = {}
+    for item in questions:
+        ref = item.get("question_ref")
+        answer_map[ref] = item.get("answer")
+        output.append(
+            {
+                "question_ref": ref,
+                "skill": item.get("skill"),
+                "template": item.get("template"),
+                "difficulty": item.get("difficulty"),
+                "question": item.get("question"),
+            }
+        )
+    return output, answer_map
+
+
+def _fetch_expected_answer(question_ref: str | None):
+    if not question_ref:
+        return None
+    raw = frappe.db.get_value("MB Question Bank", question_ref, "answer_json")
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except Exception:
+        return None
 
 
 def _build_stats_dict(stats_json: str | None) -> dict:
@@ -205,14 +321,50 @@ def start_session(
     )
     doc.insert(ignore_permissions=True)
 
-    questions = _get_question_candidates(skill=skill, grade=grade, domain=domain, limit=10, ui=ui)
+    questions = []
+    generated = False
+    if skill:
+        skill_meta = frappe.db.get_value(
+            "MB Skill",
+            skill,
+            ["name", "grade", "generator_type", "difficulty_min", "difficulty_max", "adaptive_enabled"],
+            as_dict=True,
+        )
+        adaptive_enabled = normalize_bool((skill_meta or {}).get("adaptive_enabled"))
+        generator_type = ((skill_meta or {}).get("generator_type") or "static").strip()
+        if adaptive_enabled and generator_type and generator_type != "static":
+            student_context = _get_student_context(student, skill)
+            questions = generate_questions(
+                {
+                    "name": skill_meta.get("name"),
+                    "grade": grade,
+                    "generator_type": generator_type,
+                    "difficulty_min": skill_meta.get("difficulty_min"),
+                    "difficulty_max": skill_meta.get("difficulty_max"),
+                },
+                student_context=student_context,
+                count=10,
+                session_seed=doc.name,
+            )
+            generated = True
+
+    if not questions:
+        questions = _get_question_candidates(skill=skill, grade=grade, domain=domain, limit=10, ui=ui)
+
+    client_questions, answer_map = _to_client_questions(questions)
+    session_stats = parse_doc_json(doc.stats_json)
+    session_stats["generated"] = generated
+    session_stats["answer_map"] = answer_map
+    doc.stats_json = to_json_string(session_stats)
+    doc.save(ignore_permissions=True)
 
     return {
         "ok": True,
         "data": {
             "session_id": doc.name,
             "ui": ui,
-            "questions": questions,
+            "generated": generated,
+            "questions": client_questions,
         },
     }
 
@@ -243,7 +395,18 @@ def submit_attempt(
     validate_skill_belongs_to_grade_domain(skill, session.grade, session.domain)
 
     parsed_answer = parse_json_input(given_answer_json, "given_answer_json", required=False)
-    is_correct_bool = normalize_bool(is_correct)
+    session_meta = parse_doc_json(session.stats_json)
+    answer_map = session_meta.get("answer_map") if isinstance(session_meta.get("answer_map"), dict) else {}
+    expected_answer = answer_map.get(question_ref)
+    if expected_answer is None:
+        expected_answer = _fetch_expected_answer(question_ref)
+
+    # Backend is the source of truth for correctness; client-side result is ignored.
+    is_correct_bool = (
+        _is_answer_correct(parsed_answer, expected_answer)
+        if expected_answer is not None
+        else normalize_bool(is_correct)
+    )
     hint_used_bool = normalize_bool(hint_used)
 
     attempt = frappe.get_doc(
@@ -263,12 +426,20 @@ def submit_attempt(
 
     stats = _build_stats_dict(session.stats_json)
     stats = _update_stats(stats, is_correct_bool)
-    session.stats_json = to_json_string(stats)
+    session_meta.update(stats)
+    session.stats_json = to_json_string(session_meta)
     session.save(ignore_permissions=True)
 
     _update_student_on_attempt(session, is_correct_bool)
 
-    return {"ok": True, "data": {"session_id": session.name, "stats": stats}}
+    return {
+        "ok": True,
+        "data": {
+            "session_id": session.name,
+            "stats": stats,
+            "is_correct": 1 if is_correct_bool else 0,
+        },
+    }
 
 
 @frappe.whitelist(allow_guest=True)
@@ -306,11 +477,12 @@ def end_session(session_id: str):
         "accuracy": accuracy,
         "duration_seconds": session.duration_seconds or duration_seconds,
         "stars": stars,
+        "generated": normalize_bool(extra_stats.get("generated")),
         "daily_challenge": daily_challenge_flag,
         "common_mistake": "سيتم إضافة تحليل الأخطاء قريباً",
     }
 
-    session.stats_json = to_json_string(
+    extra_stats.update(
         {
             "attempts": attempts,
             "correct": correct,
@@ -319,6 +491,7 @@ def end_session(session_id: str):
             "daily_challenge": daily_challenge_flag,
         }
     )
+    session.stats_json = to_json_string(extra_stats)
     session.save(ignore_permissions=True)
 
     continuity = {}

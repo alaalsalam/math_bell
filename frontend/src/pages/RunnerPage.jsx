@@ -23,31 +23,6 @@ const ENGINE_COMPONENTS = {
   fraction_builder: FractionBuilderGame,
 };
 
-function normalizeAnswer(answer) {
-  if (answer === null || answer === undefined) return "";
-  if (typeof answer === "object") return JSON.stringify(answer);
-  return String(answer);
-}
-
-function isCorrectAnswer(givenAnswer, answerObj) {
-  if (!answerObj || typeof answerObj !== "object") return false;
-
-  const value = givenAnswer?.value;
-  if (Object.prototype.hasOwnProperty.call(answerObj, "value")) {
-    return normalizeAnswer(value) === normalizeAnswer(answerObj.value);
-  }
-
-  if (Object.prototype.hasOwnProperty.call(answerObj, "answer")) {
-    return normalizeAnswer(value) === normalizeAnswer(answerObj.answer);
-  }
-
-  if (Array.isArray(answerObj.correct_choices)) {
-    return answerObj.correct_choices.map(normalizeAnswer).includes(normalizeAnswer(value));
-  }
-
-  return false;
-}
-
 function formatSeconds(totalSeconds) {
   const value = Math.max(0, Number(totalSeconds || 0));
   const mm = String(Math.floor(value / 60)).padStart(2, "0");
@@ -255,48 +230,48 @@ function RunnerPage() {
     if (!current || submitting || !sessionId || didFinishRef.current) return;
 
     const spentMs = Math.max(1, Date.now() - questionStartTs);
-    const isCorrect = isCorrectAnswer(givenAnswer, current.answer);
     const pickedValue = givenAnswer?.value;
-
-    setFeedback({ status: isCorrect ? "correct" : "wrong", value: pickedValue });
-    window.setTimeout(() => setFeedback({ status: "idle", value: null }), 700);
-
-    if (isCorrect) {
-      setMascotMood("😄");
-      tapHaptic([18, 28]);
-      playSfx("correct", 0.85);
-      if ((streakCorrect + 1) % 2 === 0) playSfx("applause", 0.45);
-      triggerConfetti(1000);
-      showMessageTemporarily(getSaudiMessage("correct"));
-      if ((streakCorrect + 1) >= 3) showMessageTemporarily(getSaudiMessage("streak"));
-      if (getStoredStudent()?.display_name) setMascotText(personalizedProgress(getStoredStudent().display_name));
-      if ((streakCorrect + 1) % 3 === 0) {
-        triggerBalloons(2000);
-        playSfx("pop", 0.5);
-      }
-      if ((correct + 1) % 5 === 0) {
-        triggerConfetti(1200);
-        showMessageTemporarily(getSaudiMessage("level_up"));
-      }
-    } else {
-      setMascotMood("🤔");
-      tapHaptic([45]);
-      playSfx("wrong", 0.7);
-      showMessageTemporarily(getSaudiMessage("wrong"));
-      setMascotText("بس ركز معي شوي 👀");
-    }
 
     setSubmitting(true);
     try {
-      await submitAttempt({
+      const attemptRes = await submitAttempt({
         session_id: sessionId,
         skill: current.skill || skill,
         question_ref: current.question_ref,
         given_answer_json: givenAnswer,
-        is_correct: isCorrect ? 1 : 0,
+        is_correct: 0,
         time_ms: Number(meta.time_ms || spentMs),
         hint_used: Number(meta.hint_used || 0),
       });
+      const isCorrect = Boolean(attemptRes?.data?.is_correct);
+
+      setFeedback({ status: isCorrect ? "correct" : "wrong", value: pickedValue });
+      window.setTimeout(() => setFeedback({ status: "idle", value: null }), 700);
+
+      if (isCorrect) {
+        setMascotMood("😄");
+        tapHaptic([18, 28]);
+        playSfx("correct", 0.85);
+        if ((streakCorrect + 1) % 2 === 0) playSfx("applause", 0.45);
+        triggerConfetti(1000);
+        showMessageTemporarily(getSaudiMessage("correct"));
+        if ((streakCorrect + 1) >= 3) showMessageTemporarily(getSaudiMessage("streak"));
+        if (getStoredStudent()?.display_name) setMascotText(personalizedProgress(getStoredStudent().display_name));
+        if ((streakCorrect + 1) % 3 === 0) {
+          triggerBalloons(2000);
+          playSfx("pop", 0.5);
+        }
+        if ((correct + 1) % 5 === 0) {
+          triggerConfetti(1200);
+          showMessageTemporarily(getSaudiMessage("level_up"));
+        }
+      } else {
+        setMascotMood("🤔");
+        tapHaptic([45]);
+        playSfx("wrong", 0.7);
+        showMessageTemporarily(getSaudiMessage("wrong"));
+        setMascotText("بس ركز معي شوي 👀");
+      }
 
       setAttempts((prev) => prev + 1);
       if (isCorrect) {
