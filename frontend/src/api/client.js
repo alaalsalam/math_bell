@@ -60,7 +60,7 @@ export async function getBootstrap() {
 
 export async function joinClass({ join_code, display_name, password_simple, grade, avatar_emoji }) {
   return request("math_bell.api.student_auth.join_class", {
-    join_code,
+    join_code: join_code && String(join_code).trim() ? join_code : " ",
     display_name,
     password_simple,
     grade,
@@ -184,4 +184,8 @@ export async function getWeeklyLeaderboard({ grade, class_group } = {}) {
 
 export async function getStudentWeeklyProgress({ student_id }) {
   return request("math_bell.api.analytics.student_weekly_progress", { student_id });
+}
+
+export async function getCurrentPlan({ student_id }) {
+  return request("math_bell.api.planner.get_current_plan", { student_id });
 }

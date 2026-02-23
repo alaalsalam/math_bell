@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import {
+  getCurrentPlan,
   getDailyChallenge,
   getStudentHomeInsights,
   getStudentWeeklyProgress,
@@ -21,6 +22,7 @@ function DashboardPage() {
   const [dailyChallenge, setDailyChallenge] = useState(null);
   const [weeklyTop, setWeeklyTop] = useState([]);
   const [weeklyProgress, setWeeklyProgress] = useState(null);
+  const [weeklyPlan, setWeeklyPlan] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -35,13 +37,15 @@ function DashboardPage() {
       getDailyChallenge({ student_id: student.student_id }),
       getWeeklyLeaderboard({ grade: student.grade || undefined }),
       getStudentWeeklyProgress({ student_id: student.student_id }),
+      getCurrentPlan({ student_id: student.student_id }),
     ])
-      .then(([homeRes, challengeRes, leaderboardRes, weeklyRes]) => {
+      .then(([homeRes, challengeRes, leaderboardRes, weeklyRes, planRes]) => {
         if (!alive) return;
         setInsight(homeRes?.data || null);
         setDailyChallenge(challengeRes?.data || null);
         setWeeklyTop((leaderboardRes?.data?.leaderboard || []).slice(0, 5));
         setWeeklyProgress(weeklyRes?.data || null);
+        setWeeklyPlan(planRes?.data || null);
       })
       .catch((err) => {
         if (!alive) return;
@@ -163,6 +167,36 @@ function DashboardPage() {
               />
             </div>
             {weeklyProgress?.achieved ? <p className="ok-text">يا سلام! ختمت هدف الأسبوع 🎉</p> : null}
+          </section>
+
+          <section className="teacher-block class-card">
+            <h3>خطة هذا الأسبوع 📅</h3>
+            <p>
+              من {weeklyPlan?.week_start || "-"} إلى {weeklyPlan?.week_end || "-"}
+            </p>
+            <div className="mastery-track">
+              <div
+                className="mastery-fill green"
+                style={{ width: `${Math.max(0, Math.min(100, Number(weeklyPlan?.completion_rate || 0)))}%` }}
+              />
+            </div>
+            <p>
+              {weeklyPlan?.days_completed || 0} / 5 أيام
+            </p>
+            <p className="ok-text">كفو يا بطل! خلصت يوم {weeklyPlan?.days_completed || 0} من الخطة 🔥</p>
+            <div className="class-grid">
+              {[1, 2, 3, 4, 5].map((dayNo) => {
+                const day = weeklyPlan?.plan?.[`day_${dayNo}`] || {};
+                return (
+                  <article className="class-card" key={dayNo}>
+                    <h4>اليوم {dayNo}</h4>
+                    <p>{day.title_ar || "مراجعة عامة"}</p>
+                    <p>التركيز: {day.focus || "-"}</p>
+                    <p>{day.completed ? "✔ مكتمل" : "قيد التنفيذ"}</p>
+                  </article>
+                );
+              })}
+            </div>
           </section>
 
           <section className="teacher-block actions-inline">
