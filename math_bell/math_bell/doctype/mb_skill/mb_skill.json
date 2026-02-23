@@ -121,6 +121,25 @@
    "fieldtype": "Check",
    "label": "Adaptive Enabled",
    "default": "1"
+  },
+  {
+   "fieldname": "prerequisites_json",
+   "fieldtype": "Long Text",
+   "label": "Prerequisites JSON",
+   "default": "[]"
+  },
+  {
+   "fieldname": "pack",
+   "fieldtype": "Link",
+   "label": "Skill Pack",
+   "options": "MB Skill Pack"
+  },
+  {
+   "fieldname": "unlock_rule",
+   "fieldtype": "Select",
+   "label": "Unlock Rule",
+   "options": "by_mastery\nmanual",
+   "default": "by_mastery"
   }
  ],
  "field_order": [
@@ -138,7 +157,10 @@
   "generator_type",
   "difficulty_min",
   "difficulty_max",
-  "adaptive_enabled"
+  "adaptive_enabled",
+  "prerequisites_json",
+  "pack",
+  "unlock_rule"
  ],
  "search_fields": "code,title_ar"
 }
