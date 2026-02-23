@@ -5,15 +5,15 @@ import { endSession, startDailyChallenge, startSession } from "../api/client";
 import Balloons from "../kidfx/balloons";
 import Confetti from "../kidfx/confetti";
 import { tapHaptic } from "../kidfx/haptics";
-import { getRandomMessage } from "../kidfx/messages";
-import { getSaudiMessage } from "../saudi/saudi_messages";
-import { personalizedProgress, personalizedStart } from "../saudi/greetings";
+import { personalizedProgress } from "../saudi/greetings";
 import { playSfx } from "../kidfx/sounds";
 import BubblePickGame from "../games/BubblePickGame";
 import DragDropGroupsGame from "../games/DragDropGroupsGame";
 import VerticalColumnGame from "../games/VerticalColumnGame";
 import FractionBuilderGame from "../games/FractionBuilderGame";
 import { getStoredStudent } from "../utils/storage";
+import { loadBootstrap } from "../utils/bootstrapCache";
+import { correctPhrases, pickPhrase, wrongPhrases } from "../ui/saudiCopy";
 
 const BELL_DURATION_SECONDS = 600;
 const ENGINE_COMPONENTS = {
@@ -87,6 +87,7 @@ function RunnerPage() {
   const mode = params.get("mode") || "practice";
   const ui = params.get("ui") || "mcq";
   const questionCount = Number(params.get("question_count") || 10);
+  const durationFromQuery = Number(params.get("duration_seconds") || BELL_DURATION_SECONDS);
   const isDailyChallenge = params.get("daily_challenge") === "1";
 
   const [loading, setLoading] = useState(true);
@@ -113,6 +114,11 @@ function RunnerPage() {
   const [feedback, setFeedback] = useState({ status: "idle", value: null });
   const [mascotMood, setMascotMood] = useState("🙂");
   const [mascotText, setMascotText] = useState("ترى أؤمن فيك 😄");
+  const [fxSettings, setFxSettings] = useState({
+    enable_sound: 1,
+    enable_confetti: 1,
+    enable_balloons: 1,
+  });
 
   const didFinishRef = useRef(false);
 
@@ -126,9 +132,35 @@ function RunnerPage() {
 
   const CurrentEngine = ENGINE_COMPONENTS[current?.question?.ui] || BubblePickGame;
 
+  function soundEnabled() {
+    return Boolean(Number(fxSettings?.enable_sound ?? 1));
+  }
+
+  function confettiEnabled() {
+    return Boolean(Number(fxSettings?.enable_confetti ?? 1));
+  }
+
+  function balloonsEnabled() {
+    return Boolean(Number(fxSettings?.enable_balloons ?? 1));
+  }
+
+  function playSound(name, volume) {
+    if (!soundEnabled()) return;
+    playSfx(name, volume);
+  }
+
   useEffect(() => {
     let alive = true;
     const student = getStoredStudent();
+    loadBootstrap({ studentId: student?.student_id || null })
+      .then((data) => {
+        if (!alive) return;
+        setFxSettings(data?.settings || {});
+      })
+      .catch(() => {
+        if (!alive) return;
+        setFxSettings({ enable_sound: 1, enable_confetti: 1, enable_balloons: 1 });
+      });
 
     setLoading(true);
     setError("");
@@ -145,7 +177,7 @@ function RunnerPage() {
     setMascotMood("🙂");
     setMascotText("ترى أؤمن فيك 😄");
     didFinishRef.current = false;
-    setRemainingSeconds(mode === "bell_session" ? BELL_DURATION_SECONDS : null);
+    setRemainingSeconds(mode === "bell_session" ? durationFromQuery : null);
 
     const action = isDailyChallenge
       ? startDailyChallenge({
@@ -159,7 +191,7 @@ function RunnerPage() {
           skill,
           ui,
           question_count: questionCount,
-          duration_seconds: mode === "bell_session" ? BELL_DURATION_SECONDS : undefined,
+          duration_seconds: mode === "bell_session" ? durationFromQuery : undefined,
           student: student?.student_id,
         });
 
@@ -173,7 +205,7 @@ function RunnerPage() {
         setQuestionStartTs(Date.now());
 
         if (mode === "bell_session") {
-          playSfx("bell_start", 0.8);
+          playSound("bell_start", 0.8);
         }
       })
       .catch((err) => {
@@ -188,7 +220,7 @@ function RunnerPage() {
     return () => {
       alive = false;
     };
-  }, [grade, domain, skill, mode, ui, isDailyChallenge, questionCount]);
+  }, [grade, domain, skill, mode, ui, isDailyChallenge, questionCount, durationFromQuery]);
 
   useEffect(() => {
     if (mode !== "bell_session") return undefined;
@@ -216,11 +248,13 @@ function RunnerPage() {
   }
 
   function triggerConfetti(duration = 1000) {
+    if (!confettiEnabled()) return;
     setShowConfetti(true);
     window.setTimeout(() => setShowConfetti(false), duration);
   }
 
   function triggerBalloons(duration = 2000) {
+    if (!balloonsEnabled()) return;
     setShowBalloons(true);
     window.setTimeout(() => setShowBalloons(false), duration);
   }
@@ -240,7 +274,7 @@ function RunnerPage() {
     const hintText = localHintForQuestion(current.question);
     setHintsLeft((prev) => Math.max(0, prev - 1));
     setPendingHintCount((prev) => prev + 1);
-    playSfx("pop", 0.45);
+    playSound("pop", 0.45);
     showHintBubble(`تلميح: ${hintText}`);
   }
 
@@ -252,8 +286,8 @@ function RunnerPage() {
 
     didFinishRef.current = true;
     setMascotMood("🥳");
-    playSfx("bell_end", 0.85);
-    playSfx("applause", 0.7);
+    playSound("bell_end", 0.85);
+    playSound("applause", 0.7);
     triggerConfetti(1200);
     triggerBalloons(2200);
     showMessageTemporarily("أحسنت! انتهت الحصة 🔔");
@@ -279,8 +313,8 @@ function RunnerPage() {
 
     setSubmitting(true);
     try {
-      playSfx("bell_end", 0.85);
-      playSfx("applause", 0.7);
+      playSound("bell_end", 0.85);
+      playSound("applause", 0.7);
       triggerConfetti(1200);
       triggerBalloons(2200);
       showMessageTemporarily("أحسنت! انتهت الحصة 🔔");
@@ -334,25 +368,25 @@ function RunnerPage() {
       if (isCorrect) {
         setMascotMood("😄");
         tapHaptic([18, 28]);
-        playSfx("correct", 0.85);
-        if ((streakCorrect + 1) % 2 === 0) playSfx("applause", 0.45);
+        playSound("correct", 0.85);
+        if ((streakCorrect + 1) % 2 === 0) playSound("applause", 0.45);
         triggerConfetti(1000);
-        showMessageTemporarily(getSaudiMessage("correct"));
-        if ((streakCorrect + 1) >= 3) showMessageTemporarily(getSaudiMessage("streak"));
+        showMessageTemporarily(pickPhrase(correctPhrases, "كفو يا بطل! 👏"));
+        if ((streakCorrect + 1) >= 3) showMessageTemporarily("كفو يا بطل! 👏");
         if (getStoredStudent()?.display_name) setMascotText(personalizedProgress(getStoredStudent().display_name));
         if ((streakCorrect + 1) % 3 === 0) {
           triggerBalloons(2000);
-          playSfx("pop", 0.5);
+          playSound("pop", 0.5);
         }
         if ((correct + 1) % 5 === 0) {
           triggerConfetti(1200);
-          showMessageTemporarily(getSaudiMessage("level_up"));
+          showMessageTemporarily("يا سلام! مستوى أعلى 🎮");
         }
       } else {
         setMascotMood("🤔");
         tapHaptic([45]);
-        playSfx("wrong", 0.7);
-        showMessageTemporarily(getSaudiMessage("wrong"));
+        playSound("wrong", 0.7);
+        showMessageTemporarily(pickPhrase(wrongPhrases, "قريب مره… جرّب ثانية 😉"));
         setMascotText("بس ركز معي شوي 👀");
         if (backendHint) {
           showHintBubble(backendHint);
