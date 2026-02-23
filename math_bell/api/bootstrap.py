@@ -30,6 +30,13 @@ def get_bootstrap():
         ],
         order_by="grade asc, domain asc, `order` asc, creation asc",
     )
+    skill_question_counts = frappe.get_all(
+        "MB Question Bank",
+        filters={"is_active": 1},
+        fields=["skill", "count(name) as question_count"],
+        group_by="skill",
+        limit_page_length=500,
+    )
     templates = frappe.get_all(
         "MB Game Template",
         filters={"is_active": 1},
@@ -38,9 +45,13 @@ def get_bootstrap():
     )
 
     skill_map: dict[str, dict[str, list[dict]]] = {}
+    question_count_map = {
+        row.get("skill"): int(row.get("question_count") or 0) for row in skill_question_counts
+    }
     for row in skills:
         grade_key = row.get("grade")
         domain_key = row.get("domain")
+        question_count = question_count_map.get(row.get("name"), 0)
         skill_map.setdefault(grade_key, {}).setdefault(domain_key, []).append(
             {
                 "name": row.get("name"),
@@ -49,6 +60,7 @@ def get_bootstrap():
                 "description_ar": row.get("description_ar"),
                 "order": row.get("skill_order"),
                 "mastery_threshold": row.get("mastery_threshold"),
+                "question_count": question_count,
             }
         )
 
@@ -79,9 +91,14 @@ def get_bootstrap():
         "data": {
             "grades": grades,
             "domains": domains,
-            "skills": skills,
+            "skills": [
+                {
+                    **row,
+                    "question_count": question_count_map.get(row.get("name"), 0),
+                }
+                for row in skills
+            ],
             "skills_tree": skills_tree,
             "game_templates": templates,
         },
     }
-
