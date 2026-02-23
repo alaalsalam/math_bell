@@ -134,6 +134,22 @@ def _as_plan_item(skill: SkillRow | None, focus: str) -> dict:
     }
 
 
+def _previous_plan_completion(student_id: str, current_week_start) -> float | None:
+    rows = frappe.get_all(
+        "MB Weekly Plan",
+        filters={
+            "student": student_id,
+            "week_start": ["<", str(current_week_start)],
+        },
+        fields=["completion_rate"],
+        order_by="week_start desc, creation desc",
+        limit_page_length=1,
+    )
+    if not rows:
+        return None
+    return _to_float(rows[0].get("completion_rate"), 0)
+
+
 def generate_weekly_plan(student_id: str):
     student_id = (student_id or "").strip()
     if not student_id:
@@ -167,14 +183,40 @@ def generate_weekly_plan(student_id: str):
         strong_1 = medium_1 or weak_1
 
     week_start, week_end = get_week_bounds()
+    previous_completion = _previous_plan_completion(student_id, week_start)
+
+    adaptation_mode = "normal"
+    target_days = 5
+    day_4_skill = weak_1 or medium_1
+    day_5_skill = strong_1
+    day_4_focus = "practice"
+    day_5_focus = "challenge"
+
+    if previous_completion is not None and previous_completion < 40:
+        adaptation_mode = "light"
+        target_days = 4
+        day_4_skill = weak_2 or weak_1 or medium_1
+        day_4_focus = "review"
+        day_5_skill = medium_1 or weak_1
+        day_5_focus = "review"
+    elif previous_completion is not None and previous_completion > 80:
+        adaptation_mode = "challenge"
+        target_days = 5
+        day_4_skill = strong_1 or medium_1
+        day_4_focus = "challenge"
+        day_5_skill = strong_1 or medium_1
+        day_5_focus = "challenge"
 
     return {
         "week_start": str(week_start),
         "week_end": str(week_end),
         "generated_at": now_datetime().isoformat(),
+        "target_days": target_days,
+        "adaptation_mode": adaptation_mode,
+        "previous_completion_rate": previous_completion,
         "day_1": _as_plan_item(weak_1, "practice"),
         "day_2": _as_plan_item(weak_2, "practice"),
         "day_3": _as_plan_item(medium_1, "review"),
-        "day_4": _as_plan_item(weak_1 or medium_1, "practice"),
-        "day_5": _as_plan_item(strong_1, "challenge"),
+        "day_4": _as_plan_item(day_4_skill, day_4_focus),
+        "day_5": _as_plan_item(day_5_skill, day_5_focus),
     }

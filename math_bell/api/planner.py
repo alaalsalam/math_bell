@@ -88,9 +88,11 @@ def _decorate_plan_with_progress(plan_doc):
         plan_data[key] = day_item
         completed_days += 1 if is_completed else 0
 
-    completion_rate = round((completed_days / 5) * 100, 2)
+    target_days = int(plan_data.get("target_days") or 5)
+    target_days = max(1, min(5, target_days))
+    completion_rate = round(min(100, (completed_days / target_days) * 100), 2)
     today = getdate(nowdate())
-    if completion_rate >= 100:
+    if completed_days >= target_days:
         status = "completed"
     elif today > week_end:
         status = "expired"
@@ -117,6 +119,7 @@ def _decorate_plan_with_progress(plan_doc):
         "week_start": str(plan_doc.week_start),
         "week_end": str(plan_doc.week_end),
         "completion_rate": completion_rate,
+        "target_days": target_days,
         "status": status,
         "days_completed": completed_days,
         "plan": plan_data,
@@ -155,4 +158,3 @@ def ensure_current_week_plan(student_id: str):
 def get_current_plan(student_id: str):
     plan = ensure_current_week_plan(student_id)
     return {"ok": True, "data": plan}
-
