@@ -1,5 +1,6 @@
 import frappe
 from math_bell.utils.settings import get_mb_settings
+from math_bell.utils.skill_graph import evaluate_unlocks, filter_enabled_pack_skills
 
 
 def _as_int(value, default=0):
@@ -65,6 +66,11 @@ def get_bootstrap(student_id: str | None = None):
     enabled_engines = settings.get("enabled_game_engines") or ["mcq"]
     student_level, student_skill_levels = _load_student_skill_state(student_id)
     use_locking = bool(student_id and frappe.db.exists("MB Student Profile", student_id))
+    unlock_state = {}
+    visible_skill_names = set()
+    if use_locking:
+        unlock_state = evaluate_unlocks(student_id=student_id, persist=False)
+        visible_skill_names = set(unlock_state.get("visible_skill_names") or [])
 
     grades = frappe.get_all(
         "MB Grade",
@@ -94,9 +100,13 @@ def get_bootstrap(student_id: str | None = None):
             "min_level_required",
             "adaptive_enabled",
             "generator_type",
+            "prerequisites_json",
+            "unlock_rule",
+            "pack",
         ],
         order_by="grade asc, domain asc, `order` asc, creation asc",
     )
+    skills = filter_enabled_pack_skills(skills)
     skill_question_counts = frappe.get_all(
         "MB Question Bank",
         filters={"is_active": 1},
@@ -122,7 +132,6 @@ def get_bootstrap(student_id: str | None = None):
     skill_map: dict[str, dict[str, list[dict]]] = {}
     visible_skills: list[dict] = []
     for (grade_key, domain_key), rows in grouped_skills.items():
-        previous_mastered = False
         for index, row in enumerate(rows):
             skill_name = row.get("name")
             skill_code = row.get("code")
@@ -142,14 +151,10 @@ def get_bootstrap(student_id: str | None = None):
             mastered = _is_mastered(entry if isinstance(entry, dict) else {}, row.get("mastery_threshold") or 0.7)
 
             if use_locking:
-                if index == 0:
-                    unlocked = student_level >= min_level_required
-                else:
-                    unlocked = student_level >= min_level_required and (explicit_unlocked or previous_mastered)
+                unlocked = skill_name in visible_skill_names
             else:
                 unlocked = True
 
-            previous_mastered = mastered
             if use_locking and not unlocked:
                 continue
 
@@ -165,6 +170,11 @@ def get_bootstrap(student_id: str | None = None):
                 "question_count": question_count,
                 "generated_content": has_generated_content,
                 "is_unlocked": unlocked,
+                "is_mastered": mastered,
+                "unlock_rule": row.get("unlock_rule"),
+                "pack": row.get("pack"),
+                "prerequisites_json": row.get("prerequisites_json"),
+                "is_manual_unlocked": explicit_unlocked,
             }
             visible_skill_names.add(skill_name)
             visible_skills.append({**row, **skill_item})

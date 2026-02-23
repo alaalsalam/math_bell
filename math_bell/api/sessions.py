@@ -16,6 +16,7 @@ from math_bell.api.helpers import (
 from math_bell.badges.rules import evaluate_and_award_badges
 from math_bell.generator import generate_questions
 from math_bell.hints import get_hint
+from math_bell.utils.skill_graph import evaluate_unlocks
 
 
 def _question_ui_matches(question: dict, ui: str) -> bool:
@@ -703,9 +704,19 @@ def end_session(session_id: str):
         progress = _update_student_skill_progress(session, attempts, correct)
         if progress:
             report.update(progress)
-            unlock_result = _unlock_next_skill_if_mastered(session, progress)
-            if unlock_result:
-                report.update(unlock_result)
+            unlock_state = evaluate_unlocks(
+                student_id=session.student,
+                grade=session.grade,
+                domain=session.domain,
+                persist=True,
+            )
+            unlocked_codes = unlock_state.get("unlocked_codes") or []
+            report.update(
+                {
+                    "unlocked_skills": unlocked_codes,
+                    "unlocked_count": len(unlocked_codes),
+                }
+            )
         continuity = _update_student_daily_continuity(session.student, stars)
 
     earned_badges = evaluate_and_award_badges(session, report)
