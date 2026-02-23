@@ -340,3 +340,41 @@
   background: #22c55e;
   border-color: #16a34a;
 }
+
+.tiny-bars {
+  display: grid;
+  gap: 8px;
+}
+
+.tiny-bar-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.tiny-bar-label,
+.tiny-bar-value {
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.tiny-bar-track {
+  background: #e2e8f0;
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.tiny-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0284c7, #22c55e);
+}
+
+.teacher-nav-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}

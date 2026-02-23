@@ -146,6 +146,33 @@ def teacher_kpis():
         as_dict=True,
     )
 
+    sessions_by_day = frappe.db.sql(
+        """
+        SELECT DATE(COALESCE(s.started_at, s.creation)) AS day_key, COUNT(s.name) AS sessions_count
+        FROM `tabMB Session` s
+        WHERE COALESCE(s.started_at, s.creation) >= %(seven_days)s
+        GROUP BY DATE(COALESCE(s.started_at, s.creation))
+        ORDER BY day_key ASC
+        """,
+        {"seven_days": seven_days},
+        as_dict=True,
+    )
+
+    accuracy_by_domain = frappe.db.sql(
+        """
+        SELECT s.domain,
+               COUNT(al.name) AS attempts,
+               SUM(CASE WHEN al.is_correct = 1 THEN 1 ELSE 0 END) AS correct
+        FROM `tabMB Attempt Log` al
+        INNER JOIN `tabMB Session` s ON s.name = al.session
+        WHERE COALESCE(s.started_at, s.creation) >= %(seven_days)s
+        GROUP BY s.domain
+        ORDER BY s.domain ASC
+        """,
+        {"seven_days": seven_days},
+        as_dict=True,
+    )
+
     return {
         "ok": True,
         "data": {
@@ -167,6 +194,21 @@ def teacher_kpis():
                     ),
                 }
                 for row in weak_skills
+            ],
+            "sessions_by_day_7d": [
+                {"day": str(row.get("day_key")), "sessions": _as_int(row.get("sessions_count"))}
+                for row in sessions_by_day
+            ],
+            "accuracy_by_domain_7d": [
+                {
+                    "domain": row.get("domain"),
+                    "attempts": _as_int(row.get("attempts")),
+                    "accuracy": round(
+                        (_as_int(row.get("correct")) / max(_as_int(row.get("attempts")), 1)),
+                        4,
+                    ),
+                }
+                for row in accuracy_by_domain
             ],
         },
     }
