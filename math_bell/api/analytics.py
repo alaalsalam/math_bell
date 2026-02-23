@@ -286,7 +286,7 @@ def student_detail(student_id: str):
     student = frappe.db.get_value(
         "MB Student Profile",
         student_id,
-        ["name", "display_name", "grade", "avatar_emoji", "class_group"],
+        ["name", "display_name", "grade", "avatar_emoji", "class_group", "level", "current_streak", "best_streak", "total_stars"],
         as_dict=True,
     )
     if not student:
@@ -388,7 +388,7 @@ def student_detail(student_id: str):
     for session in sessions:
         total_stars_earned += _stars_from_accuracy(_as_float(session.get("accuracy")))
 
-    best_streak_placeholder = max(0, min(20, total_correct // 5))
+    best_streak_placeholder = max(_as_int(student.get("best_streak")), max(0, min(20, total_correct // 5)))
 
     return {
         "ok": True,
@@ -401,8 +401,10 @@ def student_detail(student_id: str):
             "time_spent_seconds": total_time,
             "recommended_next_skill": recommendation,
             "reward_summary": {
-                "total_stars_earned": total_stars_earned,
+                "total_stars_earned": _as_int(student.get("total_stars") or total_stars_earned),
+                "current_streak": _as_int(student.get("current_streak")),
                 "best_streak": best_streak_placeholder,
+                "current_level": _as_int(student.get("level") or 1),
                 "accuracy_all_time": round((total_correct / max(total_attempts, 1)), 4)
                 if total_attempts
                 else 0,

@@ -66,7 +66,9 @@ function TeacherStudentPage() {
       totalTime: Number(detail?.time_spent_seconds || 0),
       recommendation: detail?.recommended_next_skill || "-",
       stars: Number(detail?.reward_summary?.total_stars_earned || 0),
+      currentStreak: Number(detail?.reward_summary?.current_streak || 0),
       bestStreak: Number(detail?.reward_summary?.best_streak || 0),
+      currentLevel: Number(detail?.reward_summary?.current_level || 1),
     };
   }, [timeline, detail]);
 
@@ -95,12 +97,20 @@ function TeacherStudentPage() {
               <p>{summary.recommendation}</p>
             </article>
             <article className="stat-card">
-              <h3>إجمالي النجوم</h3>
-              <p>{summary.stars}</p>
+              <h3>المستوى الحالي</h3>
+              <p>{summary.currentLevel}</p>
+            </article>
+            <article className="stat-card">
+              <h3>السلسلة الحالية</h3>
+              <p>{summary.currentStreak} 🔥</p>
             </article>
             <article className="stat-card">
               <h3>أفضل سلسلة</h3>
               <p>{summary.bestStreak} 🔥</p>
+            </article>
+            <article className="stat-card">
+              <h3>إجمالي النجوم</h3>
+              <p>{summary.stars} ⭐</p>
             </article>
           </section>
 
