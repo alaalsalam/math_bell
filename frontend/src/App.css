@@ -276,3 +276,25 @@
   font-weight: 800;
   color: #0f172a;
 }
+
+.column-math {
+  width: min(220px, 100%);
+  margin: 10px auto 0;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.column-math .row {
+  text-align: right;
+  min-height: 34px;
+}
+
+.column-math .line {
+  border-top: 2px solid #334155;
+  margin: 4px 0;
+}

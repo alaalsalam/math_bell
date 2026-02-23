@@ -4,12 +4,14 @@ import PageShell from "../components/PageShell";
 import { endSession, startSession, submitAttempt } from "../api/client";
 import BubblePickGame from "../games/BubblePickGame";
 import DragDropGroupsGame from "../games/DragDropGroupsGame";
+import VerticalColumnGame from "../games/VerticalColumnGame";
 import { getStoredStudent } from "../utils/storage";
 
 const BELL_DURATION_SECONDS = 600;
 const ENGINE_COMPONENTS = {
   mcq: BubblePickGame,
   drag_drop_groups: DragDropGroupsGame,
+  vertical_column: VerticalColumnGame,
 };
 
 function normalizeAnswer(answer) {
