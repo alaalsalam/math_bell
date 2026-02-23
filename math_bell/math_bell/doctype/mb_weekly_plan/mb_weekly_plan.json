@@ -1,0 +1,79 @@
+{
+ "doctype": "DocType",
+ "name": "MB Weekly Plan",
+ "module": "Math Bell",
+ "custom": 0,
+ "istable": 0,
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "allow_rename": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "report": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "student",
+   "fieldtype": "Link",
+   "options": "MB Student Profile",
+   "label": "Student",
+   "reqd": 1
+  },
+  {
+   "fieldname": "week_start",
+   "fieldtype": "Date",
+   "label": "Week Start",
+   "reqd": 1
+  },
+  {
+   "fieldname": "week_end",
+   "fieldtype": "Date",
+   "label": "Week End",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plan_json",
+   "fieldtype": "Long Text",
+   "label": "Plan JSON"
+  },
+  {
+   "fieldname": "completion_rate",
+   "fieldtype": "Float",
+   "label": "Completion Rate",
+   "default": "0"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "active\ncompleted\nexpired",
+   "default": "active"
+  }
+ ],
+ "field_order": [
+  "student",
+  "week_start",
+  "week_end",
+  "plan_json",
+  "completion_rate",
+  "status"
+ ],
+ "search_fields": "student"
+}
