@@ -2,9 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { endSession, startSession, submitAttempt } from "../api/client";
+import BubblePickGame from "../games/BubblePickGame";
 import { getStoredStudent } from "../utils/storage";
 
 const BELL_DURATION_SECONDS = 600;
+const ENGINE_COMPONENTS = {
+  mcq: BubblePickGame,
+};
 
 function normalizeAnswer(answer) {
   if (answer === null || answer === undefined) return "";
@@ -12,19 +16,20 @@ function normalizeAnswer(answer) {
   return String(answer);
 }
 
-function isCorrectChoice(choice, answerObj) {
+function isCorrectAnswer(givenAnswer, answerObj) {
   if (!answerObj || typeof answerObj !== "object") return false;
 
+  const value = givenAnswer?.value;
   if (Object.prototype.hasOwnProperty.call(answerObj, "value")) {
-    return normalizeAnswer(choice) === normalizeAnswer(answerObj.value);
+    return normalizeAnswer(value) === normalizeAnswer(answerObj.value);
   }
 
   if (Object.prototype.hasOwnProperty.call(answerObj, "answer")) {
-    return normalizeAnswer(choice) === normalizeAnswer(answerObj.answer);
+    return normalizeAnswer(value) === normalizeAnswer(answerObj.answer);
   }
 
   if (Array.isArray(answerObj.correct_choices)) {
-    return answerObj.correct_choices.map(normalizeAnswer).includes(normalizeAnswer(choice));
+    return answerObj.correct_choices.map(normalizeAnswer).includes(normalizeAnswer(value));
   }
 
   return false;
@@ -45,6 +50,7 @@ function RunnerPage() {
   const domain = params.get("domain") || "Addition";
   const skill = params.get("skill") || "";
   const mode = params.get("mode") || "practice";
+  const ui = params.get("ui") || "mcq";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -70,6 +76,8 @@ function RunnerPage() {
     return "تدريب";
   }, [mode]);
 
+  const CurrentEngine = ENGINE_COMPONENTS[current?.question?.ui] || BubblePickGame;
+
   useEffect(() => {
     startBellRef.current = new Audio("/assets/math_bell/bell_start.mp3");
     endBellRef.current = new Audio("/assets/math_bell/bell_end.mp3");
@@ -86,6 +94,8 @@ function RunnerPage() {
     setLoading(true);
     setError("");
     setSessionId("");
+    setAttempts(0);
+    setCorrect(0);
     didFinishRef.current = false;
     setRemainingSeconds(mode === "bell_session" ? BELL_DURATION_SECONDS : null);
 
@@ -94,6 +104,7 @@ function RunnerPage() {
       grade,
       domain,
       skill,
+      ui,
       duration_seconds: mode === "bell_session" ? BELL_DURATION_SECONDS : undefined,
       student: student?.student_id,
     })
@@ -106,9 +117,7 @@ function RunnerPage() {
         setQuestionStartTs(Date.now());
 
         if (mode === "bell_session") {
-          startBellRef.current?.play().catch(() => {
-            // Ignore autoplay restrictions; user interaction will enable later plays.
-          });
+          startBellRef.current?.play().catch(() => {});
         }
       })
       .catch((err) => {
@@ -123,7 +132,7 @@ function RunnerPage() {
     return () => {
       alive = false;
     };
-  }, [grade, domain, skill, mode]);
+  }, [grade, domain, skill, mode, ui]);
 
   useEffect(() => {
     if (mode !== "bell_session") return undefined;
@@ -148,8 +157,7 @@ function RunnerPage() {
   useEffect(() => {
     if (mode !== "bell_session") return;
     if (!sessionId || loading) return;
-    if (remainingSeconds === null) return;
-    if (remainingSeconds > 0) return;
+    if (remainingSeconds === null || remainingSeconds > 0) return;
     if (didFinishRef.current) return;
 
     didFinishRef.current = true;
@@ -190,11 +198,11 @@ function RunnerPage() {
     }
   }
 
-  async function answerQuestion(choice) {
+  async function handleAnswer(givenAnswer, meta = {}) {
     if (!current || submitting || !sessionId || didFinishRef.current) return;
 
     const spentMs = Math.max(1, Date.now() - questionStartTs);
-    const isCorrect = isCorrectChoice(choice, current.answer);
+    const isCorrect = isCorrectAnswer(givenAnswer, current.answer);
 
     setSubmitting(true);
     try {
@@ -202,10 +210,10 @@ function RunnerPage() {
         session_id: sessionId,
         skill: current.skill || skill,
         question_ref: current.question_ref,
-        given_answer_json: { value: choice },
+        given_answer_json: givenAnswer,
         is_correct: isCorrect ? 1 : 0,
-        time_ms: spentMs,
-        hint_used: 0,
+        time_ms: Number(meta.time_ms || spentMs),
+        hint_used: Number(meta.hint_used || 0),
       });
 
       setAttempts((prev) => prev + 1);
@@ -247,7 +255,7 @@ function RunnerPage() {
       ) : null}
 
       {!loading && !error && current ? (
-        <section className="runner-card">
+        <>
           <div className="runner-meta">
             <span>
               {index + 1} / {questions.length}
@@ -257,29 +265,15 @@ function RunnerPage() {
             </span>
           </div>
 
-          <h2>{current?.question?.text || "سؤال"}</h2>
-
-          <div className="choices-grid">
-            {(current?.question?.choices || []).map((choice, choiceIndex) => (
-              <button
-                type="button"
-                key={`${choiceIndex}-${normalizeAnswer(choice)}`}
-                className="choice-btn"
-                onClick={() => answerQuestion(choice)}
-                disabled={submitting}
-              >
-                {String(choice)}
-              </button>
-            ))}
-          </div>
+          <CurrentEngine question={current.question} disabled={submitting} onAnswer={handleAnswer} />
 
           <div className="actions-inline">
             <button type="button" className="secondary-btn" onClick={finishSession} disabled={submitting}>
               إنهاء
             </button>
-            <span className="hint-text">التالي: اختر إجابة للانتقال</span>
+            <span className="hint-text">التالي: أجب للانتقال</span>
           </div>
-        </section>
+        </>
       ) : null}
     </PageShell>
   );

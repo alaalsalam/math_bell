@@ -75,7 +75,7 @@ export async function loginStudent({ display_name, password_simple }) {
   });
 }
 
-export async function startSession({ session_type, grade, domain, skill, student, duration_seconds }) {
+export async function startSession({ session_type, grade, domain, skill, student, duration_seconds, ui }) {
   return request("math_bell.api.sessions.start_session", {
     session_type,
     grade,
@@ -83,6 +83,7 @@ export async function startSession({ session_type, grade, domain, skill, student
     skill,
     student,
     duration_seconds,
+    ui,
   });
 }
 

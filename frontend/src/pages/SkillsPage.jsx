@@ -14,6 +14,13 @@ const GRADE_LABELS = {
   "2": "الصف الثاني",
 };
 
+const GAME_TYPES = [
+  { value: "mcq", label: "أسئلة سريعة" },
+  { value: "drag_drop_groups", label: "سحب وإفلات" },
+  { value: "vertical_column", label: "عمودي" },
+  { value: "fraction_builder", label: "الكسور" },
+];
+
 function SkillsPage() {
   const { grade, domain } = useParams();
   const navigate = useNavigate();
@@ -21,6 +28,7 @@ function SkillsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [skills, setSkills] = useState([]);
+  const [selectedUi, setSelectedUi] = useState("mcq");
 
   useEffect(() => {
     let alive = true;
@@ -60,7 +68,7 @@ function SkillsPage() {
     navigate(
       `/play?grade=${encodeURIComponent(grade)}&domain=${encodeURIComponent(domain)}&skill=${encodeURIComponent(
         skill
-      )}&mode=${encodeURIComponent(sessionType)}`
+      )}&mode=${encodeURIComponent(sessionType)}&ui=${encodeURIComponent(selectedUi)}`
     );
   }
 
@@ -69,6 +77,22 @@ function SkillsPage() {
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
       {!loading && !error && skills.length === 0 ? <p>لا توجد مهارات متاحة حالياً.</p> : null}
+
+      <div className="game-type-picker">
+        <label htmlFor="game-type">نوع اللعبة</label>
+        <select
+          id="game-type"
+          className="field"
+          value={selectedUi}
+          onChange={(event) => setSelectedUi(event.target.value)}
+        >
+          {GAME_TYPES.map((type) => (
+            <option key={type.value} value={type.value}>
+              {type.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="skill-grid">
         {skills.map((skill) => (
