@@ -15,6 +15,7 @@ from math_bell.api.helpers import (
 )
 from math_bell.badges.rules import evaluate_and_award_badges
 from math_bell.generator import generate_questions
+from math_bell.hints import get_hint
 
 
 def _question_ui_matches(question: dict, ui: str) -> bool:
@@ -197,6 +198,45 @@ def _fetch_expected_answer(question_ref: str | None):
         return json.loads(raw)
     except Exception:
         return None
+
+
+def _fetch_question_from_bank(question_ref: str | None) -> dict:
+    if not question_ref:
+        return {}
+    raw = frappe.db.get_value("MB Question Bank", question_ref, "question_json")
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+
+
+def _infer_generator_type(skill_meta: dict | None, question_data: dict | None) -> str:
+    generator_type = ((skill_meta or {}).get("generator_type") or "").strip()
+    if generator_type and generator_type != "static":
+        return generator_type
+
+    question = question_data if isinstance(question_data, dict) else {}
+    ui = (question.get("ui") or "").strip()
+    payload = question.get("payload") if isinstance(question.get("payload"), dict) else {}
+    text = str(question.get("text") or "")
+
+    if ui == "vertical_column":
+        return "vertical_sub" if payload.get("op") == "-" else "vertical_add"
+    if ui == "fraction_builder":
+        if "قارن" in text:
+            return "fraction_compare"
+        return "fraction_basic"
+    if ui == "mcq" and "قارن" in text and "/" in text:
+        return "fraction_compare"
+    if "+" in text and "=" in text:
+        return "addition_range"
+    if "-" in text and "=" in text:
+        return "subtraction_range"
+
+    return "static"
 
 
 def _build_stats_dict(stats_json: str | None) -> dict:
@@ -478,9 +518,11 @@ def start_session(
         questions = _get_question_candidates(skill=skill, grade=grade, domain=domain, limit=10, ui=ui)
 
     client_questions, answer_map = _to_client_questions(questions)
+    question_map = {item.get("question_ref"): item.get("question") for item in questions}
     session_stats = parse_doc_json(doc.stats_json)
     session_stats["generated"] = generated
     session_stats["answer_map"] = answer_map
+    session_stats["question_map"] = question_map
     doc.stats_json = to_json_string(session_stats)
     doc.save(ignore_permissions=True)
 
@@ -504,6 +546,7 @@ def submit_attempt(
     is_correct: int | bool = 0,
     time_ms: int | str | None = None,
     hint_used: int | bool = 0,
+    hint_used_count: int | str | None = None,
 ):
     session_id = (session_id or "").strip()
     skill = (skill or "").strip()
@@ -523,9 +566,13 @@ def submit_attempt(
     parsed_answer = parse_json_input(given_answer_json, "given_answer_json", required=False)
     session_meta = parse_doc_json(session.stats_json)
     answer_map = session_meta.get("answer_map") if isinstance(session_meta.get("answer_map"), dict) else {}
+    question_map = session_meta.get("question_map") if isinstance(session_meta.get("question_map"), dict) else {}
     expected_answer = answer_map.get(question_ref)
     if expected_answer is None:
         expected_answer = _fetch_expected_answer(question_ref)
+    question_data = question_map.get(question_ref) if question_ref else None
+    if not isinstance(question_data, dict) or not question_data:
+        question_data = _fetch_question_from_bank(question_ref)
 
     # Backend is the source of truth for correctness; client-side result is ignored.
     is_correct_bool = (
@@ -534,6 +581,27 @@ def submit_attempt(
         else normalize_bool(is_correct)
     )
     hint_used_bool = normalize_bool(hint_used)
+    hint_used_count_value = normalize_int(hint_used_count, 1 if hint_used_bool else 0)
+    hint_used_count_value = max(hint_used_count_value, 0)
+    mistake_type = "none"
+    hint_text = ""
+
+    skill_meta = frappe.db.get_value(
+        "MB Skill",
+        skill,
+        ["name", "generator_type"],
+        as_dict=True,
+    )
+    generator_type = _infer_generator_type(skill_meta, question_data)
+    if not is_correct_bool:
+        hint_payload = {
+            "question": question_data or {},
+            "question_text": (question_data or {}).get("text"),
+            "correct_answer": expected_answer,
+        }
+        hint_result = get_hint(generator_type, hint_payload, parsed_answer)
+        mistake_type = (hint_result or {}).get("mistake_type") or "random"
+        hint_text = (hint_result or {}).get("hint_ar") or "خذ نفس… واحسب بهدوء. تقدر 👍"
 
     attempt = frappe.get_doc(
         {
@@ -545,6 +613,9 @@ def submit_attempt(
             "is_correct": 1 if is_correct_bool else 0,
             "time_ms": max(normalize_int(time_ms, 0), 0),
             "hint_used": 1 if hint_used_bool else 0,
+            "hint_used_count": hint_used_count_value,
+            "mistake_type": mistake_type,
+            "hint_text": hint_text,
             "created_at": now_datetime(),
         }
     )
@@ -564,6 +635,8 @@ def submit_attempt(
             "session_id": session.name,
             "stats": stats,
             "is_correct": 1 if is_correct_bool else 0,
+            "hint_text": hint_text,
+            "mistake_type": mistake_type,
         },
     }
 
