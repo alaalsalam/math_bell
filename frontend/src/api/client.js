@@ -66,12 +66,13 @@ export async function joinClass({ join_code, display_name, grade }) {
   });
 }
 
-export async function startSession({ session_type, grade, domain, skill, duration_seconds }) {
+export async function startSession({ session_type, grade, domain, skill, student, duration_seconds }) {
   return request("math_bell.api.sessions.start_session", {
     session_type,
     grade,
     domain,
     skill,
+    student,
     duration_seconds,
   });
 }

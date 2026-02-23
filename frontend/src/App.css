@@ -82,14 +82,17 @@
   gap: 12px;
 }
 
-.skill-card {
+.skill-card,
+.runner-card,
+.report-card {
   border: 1px solid #dbe3ef;
   border-radius: 14px;
   padding: 14px;
   background: #f8fafc;
 }
 
-.skill-card h3 {
+.skill-card h3,
+.runner-card h2 {
   margin: 0 0 8px;
 }
 
@@ -104,7 +107,8 @@
 }
 
 .primary-btn,
-.secondary-btn {
+.secondary-btn,
+.choice-btn {
   border: none;
   border-radius: 12px;
   padding: 10px 14px;
@@ -120,6 +124,42 @@
 .secondary-btn {
   background: #e2e8f0;
   color: #0f172a;
+}
+
+.choice-btn {
+  background: #1d4ed8;
+  color: #fff;
+  min-height: 52px;
+  font-size: 1rem;
+}
+
+.choices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.runner-meta {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.actions-inline {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hint-text {
+  color: #475569;
 }
 
 .error-text {

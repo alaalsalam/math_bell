@@ -34,7 +34,7 @@ def _get_question_candidates(skill: str | None, grade: str, domain: str, limit: 
     rows = frappe.get_all(
         "MB Question Bank",
         filters=filters,
-        fields=["name", "skill", "template", "difficulty", "question_json"],
+        fields=["name", "skill", "template", "difficulty", "question_json", "answer_json"],
         order_by="difficulty asc, creation asc",
         limit_page_length=limit,
     )
@@ -45,6 +45,10 @@ def _get_question_candidates(skill: str | None, grade: str, domain: str, limit: 
             question = json.loads(row.get("question_json") or "{}")
         except Exception:
             question = {}
+        try:
+            answer = json.loads(row.get("answer_json") or "{}")
+        except Exception:
+            answer = {}
         payload.append(
             {
                 "question_ref": row.get("name"),
@@ -52,6 +56,7 @@ def _get_question_candidates(skill: str | None, grade: str, domain: str, limit: 
                 "template": row.get("template"),
                 "difficulty": row.get("difficulty"),
                 "question": question,
+                "answer": answer,
             }
         )
     return payload
@@ -82,9 +87,7 @@ def _calc_stars(accuracy: float) -> int:
         return 3
     if accuracy >= 0.7:
         return 2
-    if accuracy >= 0.5:
-        return 1
-    return 0
+    return 1
 
 
 @frappe.whitelist(allow_guest=True)
@@ -129,7 +132,7 @@ def start_session(
     )
     doc.insert(ignore_permissions=True)
 
-    questions = _get_question_candidates(skill=skill, grade=grade, domain=domain, limit=12)
+    questions = _get_question_candidates(skill=skill, grade=grade, domain=domain, limit=10)
 
     return {
         "ok": True,
@@ -238,4 +241,3 @@ def end_session(session_id: str):
     session.save(ignore_permissions=True)
 
     return {"ok": True, "data": {"session_id": session.name, "report": report}}
-
