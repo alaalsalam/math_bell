@@ -15,7 +15,18 @@ from math_bell.api.helpers import (
 )
 
 
-def _get_question_candidates(skill: str | None, grade: str, domain: str, limit: int = 12) -> list[dict]:
+def _question_ui_matches(question: dict, ui: str) -> bool:
+    question_ui = (question.get("ui") or "").strip()
+    if question_ui:
+        return question_ui == ui
+
+    # Backward compatibility for old MCQ rows that don't define "ui".
+    return ui == "mcq"
+
+
+def _get_question_candidates(
+    skill: str | None, grade: str, domain: str, limit: int = 12, ui: str = "mcq"
+) -> list[dict]:
     filters: dict = {"is_active": 1}
 
     if skill:
@@ -49,16 +60,20 @@ def _get_question_candidates(skill: str | None, grade: str, domain: str, limit: 
             answer = json.loads(row.get("answer_json") or "{}")
         except Exception:
             answer = {}
-        payload.append(
-            {
-                "question_ref": row.get("name"),
-                "skill": row.get("skill"),
-                "template": row.get("template"),
-                "difficulty": row.get("difficulty"),
-                "question": question,
-                "answer": answer,
-            }
-        )
+        if _question_ui_matches(question, ui):
+            payload.append(
+                {
+                    "question_ref": row.get("name"),
+                    "skill": row.get("skill"),
+                    "template": row.get("template"),
+                    "difficulty": row.get("difficulty"),
+                    "question": question,
+                    "answer": answer,
+                }
+            )
+        if len(payload) >= limit:
+            break
+
     return payload
 
 
@@ -98,12 +113,14 @@ def start_session(
     skill: str | None = None,
     student: str | None = None,
     duration_seconds: int | None = None,
+    ui: str | None = None,
 ):
     session_type = (session_type or "").strip()
     grade = (grade or "").strip()
     domain = (domain or "").strip()
     skill = (skill or "").strip() or None
     student = (student or "").strip() or None
+    ui = (ui or "mcq").strip() or "mcq"
 
     if session_type not in {"practice", "bell_session"}:
         frappe.throw(_("Invalid session_type. Allowed values: practice, bell_session"))
@@ -132,12 +149,13 @@ def start_session(
     )
     doc.insert(ignore_permissions=True)
 
-    questions = _get_question_candidates(skill=skill, grade=grade, domain=domain, limit=10)
+    questions = _get_question_candidates(skill=skill, grade=grade, domain=domain, limit=10, ui=ui)
 
     return {
         "ok": True,
         "data": {
             "session_id": doc.name,
+            "ui": ui,
             "questions": questions,
         },
     }
