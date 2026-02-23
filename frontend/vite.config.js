@@ -55,11 +55,11 @@ export default defineConfig({
     assetsDir: "",
     rollupOptions: {
       output: {
-        entryFileNames: "js/platform.js",
+        entryFileNames: "js/platform-v2.js",
         chunkFileNames: "js/[name].js",
         assetFileNames: (assetInfo) => {
           const name = assetInfo.name || "";
-          if (name.endsWith(".css")) return "css/platform.css";
+          if (name.endsWith(".css")) return "css/platform-v2.css";
           return "assets/[name][extname]";
         },
         manualChunks: {
