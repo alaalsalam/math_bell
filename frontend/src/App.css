@@ -265,6 +265,41 @@
   color: #475569;
 }
 
+.hint-btn {
+  border: 1px solid #0ea5e9;
+  background: #ecfeff;
+  color: #0c4a6e;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+}
+
+.hint-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hint-bubble {
+  margin: 8px 0;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-weight: 700;
+}
+
+.mistake-badge {
+  display: inline-block;
+  margin: 8px 0;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-weight: 800;
+}
+
 .error-text {
   color: #b91c1c;
   margin: 8px 0 0;
