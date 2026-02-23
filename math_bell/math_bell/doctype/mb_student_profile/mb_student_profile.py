@@ -37,3 +37,7 @@ class MBStudentProfile(Document):
             self.predictions_json = "{}"
         if self.total_stars is None:
             self.total_stars = 0
+        if self.xp_points is None:
+            self.xp_points = 0
+        if not self.avatar_key:
+            self.avatar_key = ""

@@ -128,6 +128,17 @@
    "fieldtype": "Int",
    "label": "Total Stars",
    "default": "0"
+  },
+  {
+   "fieldname": "xp_points",
+   "fieldtype": "Int",
+   "label": "XP Points",
+   "default": "0"
+  },
+  {
+   "fieldname": "avatar_key",
+   "fieldtype": "Data",
+   "label": "Avatar Key"
   }
  ],
  "field_order": [
@@ -147,7 +158,9 @@
   "level",
   "skill_levels_json",
   "predictions_json",
-  "total_stars"
+  "total_stars",
+  "xp_points",
+  "avatar_key"
  ],
  "search_fields": "display_name,student_code"
 }
