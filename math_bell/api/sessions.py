@@ -13,6 +13,7 @@ from math_bell.api.helpers import (
     to_json_string,
     validate_skill_belongs_to_grade_domain,
 )
+from math_bell.badges.rules import evaluate_and_award_badges
 
 
 def _question_ui_matches(question: dict, ui: str) -> bool:
@@ -160,6 +161,7 @@ def start_session(
     student: str | None = None,
     duration_seconds: int | None = None,
     ui: str | None = None,
+    daily_challenge: int | bool = 0,
 ):
     session_type = (session_type or "").strip()
     grade = (grade or "").strip()
@@ -167,6 +169,7 @@ def start_session(
     skill = (skill or "").strip() or None
     student = (student or "").strip() or None
     ui = (ui or "mcq").strip() or "mcq"
+    daily_challenge_flag = normalize_bool(daily_challenge)
 
     if session_type not in {"practice", "bell_session"}:
         frappe.throw(_("Invalid session_type. Allowed values: practice, bell_session"))
@@ -190,7 +193,14 @@ def start_session(
             "started_at": now_datetime(),
             "duration_seconds": normalize_int(duration_seconds, 0) or None,
             "status": "active",
-            "stats_json": to_json_string({"attempts": 0, "correct": 0, "accuracy": 0}),
+            "stats_json": to_json_string(
+                {
+                    "attempts": 0,
+                    "correct": 0,
+                    "accuracy": 0,
+                    "daily_challenge": daily_challenge_flag,
+                }
+            ),
         }
     )
     doc.insert(ignore_permissions=True)
@@ -287,6 +297,8 @@ def end_session(session_id: str):
     correct = stats.get("correct", 0)
     accuracy = round((correct / attempts), 4) if attempts else 0
     stars = _calc_stars(accuracy)
+    extra_stats = parse_doc_json(session.stats_json)
+    daily_challenge_flag = normalize_bool(extra_stats.get("daily_challenge"))
 
     report = {
         "attempts": attempts,
@@ -294,6 +306,7 @@ def end_session(session_id: str):
         "accuracy": accuracy,
         "duration_seconds": session.duration_seconds or duration_seconds,
         "stars": stars,
+        "daily_challenge": daily_challenge_flag,
         "common_mistake": "سيتم إضافة تحليل الأخطاء قريباً",
     }
 
@@ -303,6 +316,7 @@ def end_session(session_id: str):
             "correct": correct,
             "accuracy": accuracy,
             "stars": stars,
+            "daily_challenge": daily_challenge_flag,
         }
     )
     session.save(ignore_permissions=True)
@@ -310,6 +324,10 @@ def end_session(session_id: str):
     continuity = {}
     if session.student and not was_ended:
         continuity = _update_student_daily_continuity(session.student, stars)
+
+    earned_badges = evaluate_and_award_badges(session, report)
+    if earned_badges:
+        report["earned_badges"] = earned_badges
 
     report.update(continuity)
 

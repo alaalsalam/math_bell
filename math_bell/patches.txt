@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 math_bell.patches.seed_curriculum_v1
 math_bell.patches.seed_curriculum_v1_1
+math_bell.patches.seed_badges_v1
