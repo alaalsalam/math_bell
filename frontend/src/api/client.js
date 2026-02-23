@@ -166,3 +166,11 @@ export async function updateSystemSettings(payload) {
 export async function getStudentHomeInsights({ student_id }) {
   return request("math_bell.api.analytics.student_home", { student_id });
 }
+
+export async function getDailyChallenge({ student_id }) {
+  return request("math_bell.api.challenges.get_daily_challenge", { student_id });
+}
+
+export async function startDailyChallenge({ student_id, ui }) {
+  return request("math_bell.api.challenges.start_daily_challenge", { student_id, ui });
+}

@@ -79,6 +79,12 @@ function ReportPage() {
           </p>
 
           <p className="ok-text">{getSaudiMessage("daily_comeback")}</p>
+          {report.daily_challenge ? <p className="ok-text">يا سلام عليك! ختمت تحدي اليوم 🔥</p> : null}
+          {(report.earned_badges || []).length ? (
+            <p className="ok-text">
+              شارات جديدة: {(report.earned_badges || []).map((item) => item.title_ar).join("، ")}
+            </p>
+          ) : null}
           {streakBroken ? <p className="error-text">فاتك أمس 😢 بس نقدر نرجع أقوى اليوم!</p> : null}
 
           <div className="actions-inline">

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
-import { endSession, startSession, submitAttempt } from "../api/client";
+import { endSession, startDailyChallenge, startSession, submitAttempt } from "../api/client";
 import Balloons from "../kidfx/balloons";
 import Confetti from "../kidfx/confetti";
 import { tapHaptic } from "../kidfx/haptics";
@@ -64,6 +64,7 @@ function RunnerPage() {
   const skill = params.get("skill") || "";
   const mode = params.get("mode") || "practice";
   const ui = params.get("ui") || "mcq";
+  const isDailyChallenge = params.get("daily_challenge") === "1";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -91,9 +92,10 @@ function RunnerPage() {
   const current = questions[index] || null;
 
   const subtitle = useMemo(() => {
+    if (isDailyChallenge) return "تحدي اليوم 🔥";
     if (mode === "bell_session") return "حصة الجرس";
     return "تدريب";
-  }, [mode]);
+  }, [isDailyChallenge, mode]);
 
   const CurrentEngine = ENGINE_COMPONENTS[current?.question?.ui] || BubblePickGame;
 
@@ -114,15 +116,22 @@ function RunnerPage() {
     didFinishRef.current = false;
     setRemainingSeconds(mode === "bell_session" ? BELL_DURATION_SECONDS : null);
 
-    startSession({
-      session_type: mode,
-      grade,
-      domain,
-      skill,
-      ui,
-      duration_seconds: mode === "bell_session" ? BELL_DURATION_SECONDS : undefined,
-      student: student?.student_id,
-    })
+    const action = isDailyChallenge
+      ? startDailyChallenge({
+          student_id: student?.student_id,
+          ui,
+        })
+      : startSession({
+          session_type: mode,
+          grade,
+          domain,
+          skill,
+          ui,
+          duration_seconds: mode === "bell_session" ? BELL_DURATION_SECONDS : undefined,
+          student: student?.student_id,
+        });
+
+    action
       .then((res) => {
         if (!alive) return;
         const payload = res?.data || {};
@@ -147,7 +156,7 @@ function RunnerPage() {
     return () => {
       alive = false;
     };
-  }, [grade, domain, skill, mode, ui]);
+  }, [grade, domain, skill, mode, ui, isDailyChallenge]);
 
   useEffect(() => {
     if (mode !== "bell_session") return undefined;

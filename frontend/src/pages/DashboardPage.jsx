@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "../components/PageShell";
-import { getStudentHomeInsights } from "../api/client";
+import { getDailyChallenge, getStudentHomeInsights } from "../api/client";
 import { getTimeGreeting } from "../saudi/greetings";
 import { getDailyTip } from "../saudi/tips";
 import { getStoredStudent } from "../utils/storage";
@@ -12,6 +12,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [insight, setInsight] = useState(null);
+  const [dailyChallenge, setDailyChallenge] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -21,10 +22,14 @@ function DashboardPage() {
       return undefined;
     }
 
-    getStudentHomeInsights({ student_id: student.student_id })
-      .then((res) => {
+    Promise.all([
+      getStudentHomeInsights({ student_id: student.student_id }),
+      getDailyChallenge({ student_id: student.student_id }),
+    ])
+      .then(([homeRes, challengeRes]) => {
         if (!alive) return;
-        setInsight(res?.data || null);
+        setInsight(homeRes?.data || null);
+        setDailyChallenge(challengeRes?.data || null);
       })
       .catch((err) => {
         if (!alive) return;
@@ -50,6 +55,29 @@ function DashboardPage() {
 
       {!loading && insight ? (
         <>
+          <section className="teacher-block class-card">
+            <h3>تحدي اليوم 🔥</h3>
+            <p>
+              المجال المقترح: <strong>{dailyChallenge?.suggested_domain || "-"}</strong>
+            </p>
+            <p>
+              المهارة: <strong>{dailyChallenge?.suggested_skill || "أي مهارة متاحة"}</strong>
+            </p>
+            <button
+              className="primary-btn"
+              type="button"
+              onClick={() =>
+                navigate(
+                  `/play?mode=practice&daily_challenge=1&ui=${encodeURIComponent(
+                    dailyChallenge?.ui || "mcq"
+                  )}`
+                )
+              }
+            >
+              ابدأ التحدي
+            </button>
+          </section>
+
           <section className="teacher-block class-card">
             <h2>{student?.display_name ? `هلا ${student.display_name} 👋` : "هلا بطل 👋"}</h2>
             <p>المستوى الحالي: {insight.level || 1}</p>
