@@ -22,6 +22,21 @@
   margin-bottom: 12px;
 }
 
+.teacher-mode-link-wrap {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.teacher-link {
+  border: none;
+  background: transparent;
+  color: #0284c7;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 .student-chip {
   display: inline-flex;
   align-items: center;
@@ -102,7 +117,9 @@
 
 .skill-card,
 .runner-card,
-.report-card {
+.report-card,
+.stat-card,
+.class-card {
   border: 1px solid #dbe3ef;
   border-radius: 14px;
   padding: 14px;
@@ -198,4 +215,27 @@
 .ok-text {
   color: #166534;
   margin: 8px 0 0;
+}
+
+.teacher-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.teacher-block {
+  margin-top: 14px;
+}
+
+.create-class-form {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 10px;
+}
+
+.class-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
 }

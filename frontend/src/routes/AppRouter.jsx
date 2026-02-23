@@ -1,11 +1,13 @@
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import RequireStudent from "../components/RequireStudent";
+import RequireTeacherMode from "../components/RequireTeacherMode";
 import DomainPage from "../pages/DomainPage";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
 import ReportPage from "../pages/ReportPage";
 import RunnerPage from "../pages/RunnerPage";
 import SkillsPage from "../pages/SkillsPage";
+import TeacherDashboardPage from "../pages/TeacherDashboardPage";
 
 function AppRouter() {
   return (
@@ -59,6 +61,15 @@ function AppRouter() {
             <RequireStudent>
               <ReportPage />
             </RequireStudent>
+          }
+        />
+
+        <Route
+          path="/teacher"
+          element={
+            <RequireTeacherMode>
+              <TeacherDashboardPage />
+            </RequireTeacherMode>
           }
         />
 

@@ -111,3 +111,37 @@ export async function endSession({ session_id }) {
     session_id,
   });
 }
+
+export async function getTeacherOverview() {
+  return request("math_bell.api.teacher.get_teacher_overview");
+}
+
+export async function createClass({ title, grade }) {
+  return request("math_bell.api.teacher.create_class", {
+    title,
+    grade,
+  });
+}
+
+export async function listStudents({ class_group, grade } = {}) {
+  return request("math_bell.api.teacher.list_students", {
+    class_group,
+    grade,
+  });
+}
+
+export async function getStudentReport({ student_id, date_from, date_to }) {
+  return request("math_bell.api.teacher.student_report", {
+    student_id,
+    date_from,
+    date_to,
+  });
+}
+
+export async function getClassReport({ class_group, date_from, date_to }) {
+  return request("math_bell.api.teacher.class_report", {
+    class_group,
+    date_from,
+    date_to,
+  });
+}
