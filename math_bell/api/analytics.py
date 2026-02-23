@@ -557,6 +557,48 @@ def student_home(student_id: str):
     target_today = max(_as_int(settings.get("default_questions_per_session"), 10), 1)
     recommended = _build_recommendation(student_id=student_id, grade=student.get("grade"))
 
+    mastery_rows = frappe.db.sql(
+        """
+        SELECT
+            al.skill,
+            sk.title_ar,
+            COUNT(al.name) AS attempts,
+            SUM(CASE WHEN al.is_correct = 1 THEN 1 ELSE 0 END) AS correct
+        FROM `tabMB Attempt Log` al
+        INNER JOIN `tabMB Session` s ON s.name = al.session
+        LEFT JOIN `tabMB Skill` sk ON sk.name = al.skill
+        WHERE s.student = %(student_id)s
+        GROUP BY al.skill, sk.title_ar
+        ORDER BY attempts DESC
+        LIMIT 20
+        """,
+        {"student_id": student_id},
+        as_dict=True,
+    )
+
+    skills_mastery = []
+    for row in mastery_rows:
+        attempts_count = _as_int(row.get("attempts"))
+        correct_count = _as_int(row.get("correct"))
+        mastery = round((correct_count / max(attempts_count, 1)) * 100, 2)
+        if mastery < 40:
+            color = "gray"
+        elif mastery < 70:
+            color = "orange"
+        else:
+            color = "green"
+
+        skills_mastery.append(
+            {
+                "skill": row.get("skill"),
+                "title_ar": row.get("title_ar") or row.get("skill"),
+                "attempts": attempts_count,
+                "correct": correct_count,
+                "mastery_percent": mastery,
+                "mastery_color": color,
+            }
+        )
+
     return {
         "ok": True,
         "data": {
@@ -569,5 +611,6 @@ def student_home(student_id: str):
             "best_streak": _as_int(student.get("best_streak")),
             "accuracy_all_time": round((correct / max(attempts, 1)), 4) if attempts else 0,
             "stars_total": _as_int(student.get("total_stars") or _stars_from_accuracy((correct / max(attempts, 1)) if attempts else 0)),
+            "skills_mastery": skills_mastery,
         },
     }
