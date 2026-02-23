@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import Confetti from "../kidfx/confetti";
 import { calcStarsFromScore } from "../kidfx/rewards";
+import { getSaudiMessage } from "../saudi/saudi_messages";
 import { endSession } from "../api/client";
 
 function ReportPage() {
@@ -52,6 +53,7 @@ function ReportPage() {
   }, [report]);
 
   const stars = calcStarsFromScore(Number(report?.correct || 0), Number(report?.attempts || 0));
+  const streakBroken = Boolean(report?.streak_broken);
 
   return (
     <PageShell title="النتيجة" subtitle={`Session: ${sessionId || "-"}`}>
@@ -76,9 +78,13 @@ function ReportPage() {
             <strong className="stars-fx">{"★".repeat(stars)}</strong>
           </p>
 
-          <button type="button" className="primary-btn" onClick={() => navigate("/")}>
-            العودة للرئيسية
-          </button>
+          <p className="ok-text">{getSaudiMessage("daily_comeback")}</p>
+          {streakBroken ? <p className="error-text">فاتك أمس 😢 بس نقدر نرجع أقوى اليوم!</p> : null}
+
+          <div className="actions-inline">
+            <button type="button" className="primary-btn" onClick={() => navigate("/play")}>ابدأ تحدي جديد</button>
+            <button type="button" className="secondary-btn" onClick={() => navigate("/dashboard")}>أرجع للوحة</button>
+          </div>
         </section>
       ) : null}
     </PageShell>

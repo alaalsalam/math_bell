@@ -259,6 +259,7 @@ function RunnerPage() {
       if ((streakCorrect + 1) % 2 === 0) playSfx("applause", 0.45);
       triggerConfetti(1000);
       showMessageTemporarily(getSaudiMessage("correct"));
+      if ((streakCorrect + 1) >= 3) showMessageTemporarily(getSaudiMessage("streak"));
       if (getStoredStudent()?.display_name) setMascotText(personalizedProgress(getStoredStudent().display_name));
       if ((streakCorrect + 1) % 3 === 0) {
         triggerBalloons(2000);
@@ -266,7 +267,7 @@ function RunnerPage() {
       }
       if ((correct + 1) % 5 === 0) {
         triggerConfetti(1200);
-        showMessageTemporarily("مستوى أعلى! 🎮");
+        showMessageTemporarily(getSaudiMessage("level_up"));
       }
     } else {
       setMascotMood("🤔");
