@@ -2,7 +2,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import now_datetime, time_diff_in_seconds
+from frappe.utils import add_days, getdate, now_datetime, nowdate, time_diff_in_seconds
 
 from math_bell.api.helpers import (
     ensure_active_link,
@@ -103,6 +103,52 @@ def _calc_stars(accuracy: float) -> int:
     if accuracy >= 0.7:
         return 2
     return 1
+
+
+def _level_from_total_correct(total_correct: int) -> int:
+    return max(1, int(total_correct // 20) + 1)
+
+
+def _update_student_on_attempt(session, is_correct: bool) -> None:
+    if not session.student:
+        return
+    student = frappe.get_doc("MB Student Profile", session.student)
+    if is_correct:
+        student.total_correct = normalize_int(student.total_correct, 0) + 1
+    student.level = _level_from_total_correct(normalize_int(student.total_correct, 0))
+    student.save(ignore_permissions=True)
+
+
+def _update_student_daily_continuity(student_name: str, stars: int) -> dict:
+    student = frappe.get_doc("MB Student Profile", student_name)
+
+    today = getdate(nowdate())
+    yesterday = add_days(today, -1)
+    previous = getdate(student.last_active_date) if student.last_active_date else None
+
+    streak_broken = bool(previous and previous < yesterday)
+
+    if previous == today:
+        current = normalize_int(student.current_streak, 0)
+    elif previous == yesterday:
+        current = normalize_int(student.current_streak, 0) + 1
+    else:
+        current = 1
+
+    student.current_streak = current
+    student.best_streak = max(normalize_int(student.best_streak, 0), current)
+    student.last_active_date = today
+    student.total_stars = normalize_int(student.total_stars, 0) + normalize_int(stars, 0)
+    student.level = _level_from_total_correct(normalize_int(student.total_correct, 0))
+    student.save(ignore_permissions=True)
+
+    return {
+        "current_streak": normalize_int(student.current_streak, 0),
+        "best_streak": normalize_int(student.best_streak, 0),
+        "streak_broken": streak_broken,
+        "level": normalize_int(student.level, 1),
+        "total_stars": normalize_int(student.total_stars, 0),
+    }
 
 
 @frappe.whitelist(allow_guest=True)
@@ -210,6 +256,8 @@ def submit_attempt(
     session.stats_json = to_json_string(stats)
     session.save(ignore_permissions=True)
 
+    _update_student_on_attempt(session, is_correct_bool)
+
     return {"ok": True, "data": {"session_id": session.name, "stats": stats}}
 
 
@@ -220,6 +268,7 @@ def end_session(session_id: str):
         frappe.throw(_("session_id is required"))
 
     session = frappe.get_doc("MB Session", session_id)
+    was_ended = session.status == "ended"
 
     if session.skill:
         validate_skill_belongs_to_grade_domain(session.skill, session.grade, session.domain)
@@ -257,5 +306,11 @@ def end_session(session_id: str):
         }
     )
     session.save(ignore_permissions=True)
+
+    continuity = {}
+    if session.student and not was_ended:
+        continuity = _update_student_daily_continuity(session.student, stars)
+
+    report.update(continuity)
 
     return {"ok": True, "data": {"session_id": session.name, "report": report}}

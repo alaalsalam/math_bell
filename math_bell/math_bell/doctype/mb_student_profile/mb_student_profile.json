@@ -81,6 +81,41 @@
    "fieldtype": "Check",
    "label": "Is Active",
    "default": "1"
+  },
+  {
+   "fieldname": "current_streak",
+   "fieldtype": "Int",
+   "label": "Current Streak",
+   "default": "0"
+  },
+  {
+   "fieldname": "last_active_date",
+   "fieldtype": "Date",
+   "label": "Last Active Date"
+  },
+  {
+   "fieldname": "best_streak",
+   "fieldtype": "Int",
+   "label": "Best Streak",
+   "default": "0"
+  },
+  {
+   "fieldname": "total_correct",
+   "fieldtype": "Int",
+   "label": "Total Correct",
+   "default": "0"
+  },
+  {
+   "fieldname": "level",
+   "fieldtype": "Int",
+   "label": "Level",
+   "default": "1"
+  },
+  {
+   "fieldname": "total_stars",
+   "fieldtype": "Int",
+   "label": "Total Stars",
+   "default": "0"
   }
  ],
  "field_order": [
@@ -92,7 +127,13 @@
   "avatar_emoji",
   "last_login",
   "avatar",
-  "is_active"
+  "is_active",
+  "current_streak",
+  "last_active_date",
+  "best_streak",
+  "total_correct",
+  "level",
+  "total_stars"
  ],
  "search_fields": "display_name,student_code"
 }

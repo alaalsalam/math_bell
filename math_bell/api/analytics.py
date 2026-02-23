@@ -516,7 +516,7 @@ def student_home(student_id: str):
     student = frappe.db.get_value(
         "MB Student Profile",
         student_id,
-        ["name", "display_name", "grade", "is_active"],
+        ["name", "display_name", "grade", "is_active", "level", "current_streak", "total_stars", "best_streak"],
         as_dict=True,
     )
     if not student:
@@ -564,9 +564,10 @@ def student_home(student_id: str):
             "attempts_today": _as_int(attempts_today),
             "target_today": target_today,
             "recommended_next_skill": recommended,
-            "streak": streak,
-            "level": level,
+            "streak": _as_int(student.get("current_streak") or streak),
+            "level": _as_int(student.get("level") or level),
+            "best_streak": _as_int(student.get("best_streak")),
             "accuracy_all_time": round((correct / max(attempts, 1)), 4) if attempts else 0,
-            "stars_total": _stars_from_accuracy((correct / max(attempts, 1)) if attempts else 0),
+            "stars_total": _as_int(student.get("total_stars") or _stars_from_accuracy((correct / max(attempts, 1)) if attempts else 0)),
         },
     }

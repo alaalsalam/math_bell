@@ -23,3 +23,13 @@ class MBStudentProfile(Document):
             ensure_link_exists('MB Class Group', self.class_group, 'Class Group')
         if not self.password_simple:
             self.password_simple = "1234"
+        if self.current_streak is None:
+            self.current_streak = 0
+        if self.best_streak is None:
+            self.best_streak = 0
+        if self.total_correct is None:
+            self.total_correct = 0
+        if self.level is None or int(self.level or 0) < 1:
+            self.level = 1
+        if self.total_stars is None:
+            self.total_stars = 0
