@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { createClass, getTeacherOverview } from "../api/client";
+import { disableTeacherMode } from "../utils/teacherMode";
 
 function TeacherDashboardPage() {
   const [overview, setOverview] = useState(null);
@@ -45,8 +47,19 @@ function TeacherDashboardPage() {
     }
   }
 
+  function exitTeacherMode() {
+    disableTeacherMode();
+    window.location.hash = "#/";
+  }
+
   return (
     <PageShell title="لوحة المعلمة" subtitle="نظرة عامة">
+      <div className="teacher-mode-link-wrap">
+        <button type="button" className="teacher-link" onClick={exitTeacherMode}>
+          إغلاق وضع المعلمة
+        </button>
+      </div>
+
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
 
@@ -91,6 +104,9 @@ function TeacherDashboardPage() {
                   <p>الصف: {classRow.grade}</p>
                   <p>رمز الانضمام: {classRow.join_code}</p>
                   <p>عدد الطلاب: {classRow.students_count}</p>
+                  <Link className="teacher-link" to={`/teacher/class/${classRow.name}`}>
+                    تقرير الفصل
+                  </Link>
                 </article>
               ))}
             </div>

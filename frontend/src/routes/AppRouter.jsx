@@ -7,7 +7,9 @@ import LoginPage from "../pages/LoginPage";
 import ReportPage from "../pages/ReportPage";
 import RunnerPage from "../pages/RunnerPage";
 import SkillsPage from "../pages/SkillsPage";
+import TeacherClassPage from "../pages/TeacherClassPage";
 import TeacherDashboardPage from "../pages/TeacherDashboardPage";
+import TeacherStudentPage from "../pages/TeacherStudentPage";
 
 function AppRouter() {
   return (
@@ -69,6 +71,22 @@ function AppRouter() {
           element={
             <RequireTeacherMode>
               <TeacherDashboardPage />
+            </RequireTeacherMode>
+          }
+        />
+        <Route
+          path="/teacher/class/:classId"
+          element={
+            <RequireTeacherMode>
+              <TeacherClassPage />
+            </RequireTeacherMode>
+          }
+        />
+        <Route
+          path="/teacher/student/:studentId"
+          element={
+            <RequireTeacherMode>
+              <TeacherStudentPage />
             </RequireTeacherMode>
           }
         />
