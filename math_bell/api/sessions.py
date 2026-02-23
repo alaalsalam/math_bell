@@ -272,13 +272,16 @@ def _level_from_total_correct(total_correct: int) -> int:
     return max(1, int(total_correct // 20) + 1)
 
 
+def _level_from_xp_points(xp_points: int) -> int:
+    return max(1, int(normalize_int(xp_points, 0) // 100) + 1)
+
+
 def _update_student_on_attempt(session, is_correct: bool) -> None:
     if not session.student:
         return
     student = frappe.get_doc("MB Student Profile", session.student)
     if is_correct:
         student.total_correct = normalize_int(student.total_correct, 0) + 1
-    student.level = _level_from_total_correct(normalize_int(student.total_correct, 0))
     student.save(ignore_permissions=True)
 
 
@@ -423,7 +426,7 @@ def _update_student_daily_continuity(student_name: str, stars: int) -> dict:
     student.best_streak = max(normalize_int(student.best_streak, 0), current)
     student.last_active_date = today
     student.total_stars = normalize_int(student.total_stars, 0) + normalize_int(stars, 0)
-    student.level = _level_from_total_correct(normalize_int(student.total_correct, 0))
+    student.level = _level_from_xp_points(normalize_int(student.xp_points, 0))
     student.save(ignore_permissions=True)
 
     return {
@@ -432,6 +435,46 @@ def _update_student_daily_continuity(student_name: str, stars: int) -> dict:
         "streak_broken": streak_broken,
         "level": normalize_int(student.level, 1),
         "total_stars": normalize_int(student.total_stars, 0),
+    }
+
+
+def _award_xp_on_end_session(student_name: str, correct: int, unlocked_next: bool, mastery_reached: bool) -> dict:
+    student = frappe.get_doc("MB Student Profile", student_name)
+
+    xp_delta = max(normalize_int(correct, 0), 0) * 5
+    xp_delta += 10  # session completion bonus
+    mastery_bonus_applied = bool(unlocked_next or mastery_reached)
+    if mastery_bonus_applied:
+        xp_delta += 50
+
+    before_xp = normalize_int(student.xp_points, 0)
+    after_xp = before_xp + xp_delta
+    level_after = _level_from_xp_points(after_xp)
+    level_before = _level_from_xp_points(before_xp)
+
+    student.xp_points = after_xp
+    student.level = level_after
+    student.save(ignore_permissions=True)
+
+    reward_type = "chest" if mastery_bonus_applied else "coins"
+    reward_rarity = "rare" if xp_delta >= 60 else "common"
+    reward_label = "صندوق مكافأة مميز" if reward_type == "chest" else "عملات خبرة"
+
+    if level_after > level_before:
+        reward_type = "badge"
+        reward_rarity = "rare"
+        reward_label = "ترقية مستوى"
+
+    return {
+        "xp_delta": xp_delta,
+        "xp_points": after_xp,
+        "level": level_after,
+        "level_up": level_after > level_before,
+        "reward": {
+            "type": reward_type,
+            "label_ar": reward_label,
+            "rarity": reward_rarity,
+        },
     }
 
 
@@ -701,7 +744,14 @@ def end_session(session_id: str):
 
     continuity = {}
     if session.student and not was_ended:
+        unlock_before = evaluate_unlocks(
+            student_id=session.student,
+            grade=session.grade,
+            domain=session.domain,
+            persist=False,
+        )
         progress = _update_student_skill_progress(session, attempts, correct)
+        mastery_reached = False
         if progress:
             report.update(progress)
             unlock_state = evaluate_unlocks(
@@ -711,11 +761,36 @@ def end_session(session_id: str):
                 persist=True,
             )
             unlocked_codes = unlock_state.get("unlocked_codes") or []
+            previous_unlocked_codes = set(unlock_before.get("unlocked_codes") or [])
+            unlocked_next = any(code not in previous_unlocked_codes for code in unlocked_codes)
+            threshold = frappe.db.get_value("MB Skill", session.skill, "mastery_threshold") if session.skill else 0.7
+            mastery_reached = (
+                float(progress.get("skill_accuracy") or 0) >= float(threshold or 0.7)
+                and normalize_int(progress.get("skill_attempts"), 0) > 0
+            )
             report.update(
                 {
                     "unlocked_skills": unlocked_codes,
                     "unlocked_count": len(unlocked_codes),
+                    "unlocked_next": bool(unlocked_next),
                 }
+            )
+            report.update(
+                _award_xp_on_end_session(
+                    student_name=session.student,
+                    correct=correct,
+                    unlocked_next=bool(unlocked_next),
+                    mastery_reached=mastery_reached,
+                )
+            )
+        else:
+            report.update(
+                _award_xp_on_end_session(
+                    student_name=session.student,
+                    correct=correct,
+                    unlocked_next=False,
+                    mastery_reached=False,
+                )
             )
         continuity = _update_student_daily_continuity(session.student, stars)
 
