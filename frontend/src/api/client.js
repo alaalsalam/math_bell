@@ -150,3 +150,7 @@ export async function getClassReport({ class_group, date_from, date_to }) {
 export async function getTeacherKpis() {
   return request("math_bell.api.analytics.teacher_kpis");
 }
+
+export async function getStudentDetail({ student_id }) {
+  return request("math_bell.api.analytics.student_detail", { student_id });
+}
