@@ -78,6 +78,24 @@
    "fieldtype": "Check",
    "label": "Is Active",
    "default": "1"
+  },
+  {
+   "fieldname": "is_featured",
+   "fieldtype": "Check",
+   "label": "Is Featured",
+   "default": "0"
+  },
+  {
+   "fieldname": "min_level_required",
+   "fieldtype": "Int",
+   "label": "Min Level Required",
+   "default": "1"
+  },
+  {
+   "fieldname": "show_in_student_app",
+   "fieldtype": "Check",
+   "label": "Show In Student App",
+   "default": "1"
   }
  ],
  "field_order": [
@@ -88,7 +106,10 @@
   "description_ar",
   "order",
   "mastery_threshold",
-  "is_active"
+  "is_active",
+  "is_featured",
+  "min_level_required",
+  "show_in_student_app"
  ],
  "search_fields": "code,title_ar"
 }
