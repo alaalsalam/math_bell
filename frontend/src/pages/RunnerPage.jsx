@@ -86,6 +86,7 @@ function RunnerPage() {
   const skill = params.get("skill") || "";
   const mode = params.get("mode") || "practice";
   const ui = params.get("ui") || "mcq";
+  const questionCount = Number(params.get("question_count") || 10);
   const isDailyChallenge = params.get("daily_challenge") === "1";
 
   const [loading, setLoading] = useState(true);
@@ -157,6 +158,7 @@ function RunnerPage() {
           domain,
           skill,
           ui,
+          question_count: questionCount,
           duration_seconds: mode === "bell_session" ? BELL_DURATION_SECONDS : undefined,
           student: student?.student_id,
         });
@@ -186,7 +188,7 @@ function RunnerPage() {
     return () => {
       alive = false;
     };
-  }, [grade, domain, skill, mode, ui, isDailyChallenge]);
+  }, [grade, domain, skill, mode, ui, isDailyChallenge, questionCount]);
 
   useEffect(() => {
     if (mode !== "bell_session") return undefined;

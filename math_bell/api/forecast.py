@@ -30,6 +30,8 @@ def _sorted_predictions(predictions_map: dict) -> list[dict]:
                 "skill_code": code,
                 "skill": payload.get("skill") or code,
                 "title_ar": payload.get("title_ar") or code,
+                "grade": payload.get("grade"),
+                "domain": payload.get("domain"),
                 "p_mastery": float(payload.get("p_mastery") or 0),
                 "eta_sessions": int(payload.get("eta_sessions") or 0),
                 "risk": payload.get("risk") or "low",
@@ -191,4 +193,3 @@ def teacher_risk_overview():
             "distribution": distribution,
         },
     }
-

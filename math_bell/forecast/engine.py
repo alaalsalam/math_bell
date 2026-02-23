@@ -59,7 +59,7 @@ def _skill_base_rows(student_id: str):
     return frappe.get_all(
         "MB Skill",
         filters=filters,
-        fields=["name", "code", "title_ar", "mastery_threshold", "order"],
+        fields=["name", "code", "title_ar", "grade", "domain", "mastery_threshold", "order"],
         order_by="grade asc, domain asc, `order` asc, creation asc",
         limit_page_length=500,
     )
@@ -209,6 +209,8 @@ def forecast_student(student_id: str, window_days: int = 14):
         predictions[skill_code] = {
             "skill": skill_name,
             "title_ar": skill.get("title_ar") or skill_code,
+            "grade": skill.get("grade"),
+            "domain": skill.get("domain"),
             "p_mastery": p_mastery,
             "eta_sessions": eta_sessions,
             "risk": risk,

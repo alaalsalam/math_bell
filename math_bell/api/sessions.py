@@ -442,6 +442,7 @@ def start_session(
     skill: str | None = None,
     student: str | None = None,
     duration_seconds: int | None = None,
+    question_count: int | None = None,
     ui: str | None = None,
     daily_challenge: int | bool = 0,
 ):
@@ -451,6 +452,7 @@ def start_session(
     skill = (skill or "").strip() or None
     student = (student or "").strip() or None
     ui = (ui or "mcq").strip() or "mcq"
+    question_count = _clamp(normalize_int(question_count, 10), 1, 20)
     daily_challenge_flag = normalize_bool(daily_challenge)
 
     if session_type not in {"practice", "bell_session"}:
@@ -509,13 +511,15 @@ def start_session(
                     "difficulty_max": skill_meta.get("difficulty_max"),
                 },
                 student_context=student_context,
-                count=10,
+                count=question_count,
                 session_seed=doc.name,
             )
             generated = True
 
     if not questions:
-        questions = _get_question_candidates(skill=skill, grade=grade, domain=domain, limit=10, ui=ui)
+        questions = _get_question_candidates(
+            skill=skill, grade=grade, domain=domain, limit=question_count, ui=ui
+        )
 
     client_questions, answer_map = _to_client_questions(questions)
     question_map = {item.get("question_ref"): item.get("question") for item in questions}
@@ -532,6 +536,7 @@ def start_session(
             "session_id": doc.name,
             "ui": ui,
             "generated": generated,
+            "question_count": len(client_questions),
             "questions": client_questions,
         },
     }

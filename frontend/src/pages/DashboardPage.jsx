@@ -4,6 +4,7 @@ import PageShell from "../components/PageShell";
 import {
   getCurrentPlan,
   getDailyChallenge,
+  getStudentForecast,
   getStudentHomeInsights,
   getStudentWeeklyProgress,
   getWeeklyLeaderboard,
@@ -23,6 +24,7 @@ function DashboardPage() {
   const [weeklyTop, setWeeklyTop] = useState([]);
   const [weeklyProgress, setWeeklyProgress] = useState(null);
   const [weeklyPlan, setWeeklyPlan] = useState(null);
+  const [focusToday, setFocusToday] = useState([]);
 
   useEffect(() => {
     let alive = true;
@@ -38,14 +40,16 @@ function DashboardPage() {
       getWeeklyLeaderboard({ grade: student.grade || undefined }),
       getStudentWeeklyProgress({ student_id: student.student_id }),
       getCurrentPlan({ student_id: student.student_id }),
+      getStudentForecast({ student_id: student.student_id }),
     ])
-      .then(([homeRes, challengeRes, leaderboardRes, weeklyRes, planRes]) => {
+      .then(([homeRes, challengeRes, leaderboardRes, weeklyRes, planRes, forecastRes]) => {
         if (!alive) return;
         setInsight(homeRes?.data || null);
         setDailyChallenge(challengeRes?.data || null);
         setWeeklyTop((leaderboardRes?.data?.leaderboard || []).slice(0, 5));
         setWeeklyProgress(weeklyRes?.data || null);
         setWeeklyPlan(planRes?.data || null);
+        setFocusToday((forecastRes?.data?.focus_today || []).slice(0, 2));
       })
       .catch((err) => {
         if (!alive) return;
@@ -112,6 +116,51 @@ function DashboardPage() {
             <h3>نصيحة اليوم</h3>
             <p>{tip}</p>
             <p>اقتراح اليوم: {insight.recommended_next_skill || "ابدأ بأي مهارة"}</p>
+          </section>
+
+          <section className="teacher-block class-card">
+            <h3>تركيز اليوم 🎯</h3>
+            <p>يا بطل… اليوم بس ركّز على نقطتين وتكفو 🔥</p>
+            <div className="class-grid">
+              {(focusToday || []).map((item) => (
+                <article className="class-card" key={item.skill_code || item.skill}>
+                  <h4>{item.title_ar || item.skill_code || item.skill}</h4>
+                  <p>مستوى الخطر: {item.risk === "high" ? "عالٍ" : item.risk === "medium" ? "متوسط" : "منخفض"}</p>
+                  <p>إتقان متوقع: {Math.round(Number(item.p_mastery || 0) * 100)}%</p>
+                  <div className="actions">
+                    <button
+                      className="primary-btn"
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          `/play?grade=${encodeURIComponent(item.grade || student?.grade || "1")}` +
+                            `&domain=${encodeURIComponent(item.domain || "Addition")}` +
+                            `&skill=${encodeURIComponent(item.skill || item.skill_code || "")}` +
+                            "&mode=practice&ui=mcq"
+                        )
+                      }
+                    >
+                      ابدأ تدريب الآن
+                    </button>
+                    <button
+                      className="secondary-btn"
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          `/play?grade=${encodeURIComponent(item.grade || student?.grade || "1")}` +
+                            `&domain=${encodeURIComponent(item.domain || "Addition")}` +
+                            `&skill=${encodeURIComponent(item.skill || item.skill_code || "")}` +
+                            "&mode=practice&ui=mcq&question_count=5"
+                        )
+                      }
+                    >
+                      ابدأ تحدي سريع (5 أسئلة)
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+            {(focusToday || []).length === 0 ? <p>لا توجد مهارات حرجة الآن، استمر على خطة الأسبوع 👏</p> : null}
           </section>
 
           <section className="teacher-block class-card">

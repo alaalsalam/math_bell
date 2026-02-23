@@ -75,7 +75,16 @@ export async function loginStudent({ display_name, password_simple }) {
   });
 }
 
-export async function startSession({ session_type, grade, domain, skill, student, duration_seconds, ui }) {
+export async function startSession({
+  session_type,
+  grade,
+  domain,
+  skill,
+  student,
+  duration_seconds,
+  question_count,
+  ui,
+}) {
   return request("math_bell.api.sessions.start_session", {
     session_type,
     grade,
@@ -83,6 +92,7 @@ export async function startSession({ session_type, grade, domain, skill, student
     skill,
     student,
     duration_seconds,
+    question_count,
     ui,
   });
 }
@@ -188,4 +198,12 @@ export async function getStudentWeeklyProgress({ student_id }) {
 
 export async function getCurrentPlan({ student_id }) {
   return request("math_bell.api.planner.get_current_plan", { student_id });
+}
+
+export async function getStudentForecast({ student_id }) {
+  return request("math_bell.api.forecast.get_student_forecast", { student_id });
+}
+
+export async function getTeacherRiskOverview() {
+  return request("math_bell.api.forecast.teacher_risk_overview");
 }
