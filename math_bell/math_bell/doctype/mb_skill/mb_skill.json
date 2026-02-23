@@ -96,6 +96,31 @@
    "fieldtype": "Check",
    "label": "Show In Student App",
    "default": "1"
+  },
+  {
+   "fieldname": "generator_type",
+   "fieldtype": "Select",
+   "label": "Generator Type",
+   "options": "static\naddition_range\nsubtraction_range\nvertical_add\nvertical_sub\nfraction_basic\nfraction_compare",
+   "default": "static"
+  },
+  {
+   "fieldname": "difficulty_min",
+   "fieldtype": "Int",
+   "label": "Difficulty Min",
+   "default": "1"
+  },
+  {
+   "fieldname": "difficulty_max",
+   "fieldtype": "Int",
+   "label": "Difficulty Max",
+   "default": "3"
+  },
+  {
+   "fieldname": "adaptive_enabled",
+   "fieldtype": "Check",
+   "label": "Adaptive Enabled",
+   "default": "1"
   }
  ],
  "field_order": [
@@ -109,7 +134,11 @@
   "is_active",
   "is_featured",
   "min_level_required",
-  "show_in_student_app"
+  "show_in_student_app",
+  "generator_type",
+  "difficulty_min",
+  "difficulty_max",
+  "adaptive_enabled"
  ],
  "search_fields": "code,title_ar"
 }
