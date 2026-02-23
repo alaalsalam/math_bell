@@ -9,6 +9,11 @@ const DOMAIN_LABELS = {
   Fractions: "الكسور",
 };
 
+function formatDateTime(value) {
+  if (!value) return "-";
+  return String(value).replace("T", " ").slice(0, 16);
+}
+
 function TeacherStudentPage() {
   const { studentId } = useParams();
 
@@ -79,6 +84,43 @@ function TeacherStudentPage() {
                   <p>الدقة: {Math.round((row.accuracy || 0) * 100)}%</p>
                 </article>
               ))}
+            </div>
+          </section>
+
+          <section className="teacher-block">
+            <h3>آخر 20 جلسة</h3>
+            <div className="sessions-table-wrap">
+              <table className="sessions-table">
+                <thead>
+                  <tr>
+                    <th>النوع</th>
+                    <th>المجال</th>
+                    <th>المهارة</th>
+                    <th>بدأت</th>
+                    <th>انتهت</th>
+                    <th>المدة</th>
+                    <th>الدقة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(report.recent_sessions || []).map((session, idx) => (
+                    <tr key={`${session.started_at || "s"}-${idx}`}>
+                      <td>{session.session_type === "bell_session" ? "جرس" : "تدريب"}</td>
+                      <td>{DOMAIN_LABELS[session.domain] || session.domain || "-"}</td>
+                      <td>{session.skill || "-"}</td>
+                      <td>{formatDateTime(session.started_at)}</td>
+                      <td>{formatDateTime(session.ended_at)}</td>
+                      <td>{session.duration_seconds || 0} ث</td>
+                      <td>{Math.round((session.accuracy || 0) * 100)}%</td>
+                    </tr>
+                  ))}
+                  {(report.recent_sessions || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={7}>لا توجد جلسات حديثة.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
             </div>
           </section>
         </>

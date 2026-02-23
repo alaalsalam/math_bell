@@ -236,6 +236,29 @@ def student_report(student_id: str, date_from: str | None = None, date_to: str |
         for row in domain_rows
     }
 
+    recent_sessions_rows = frappe.db.sql(
+        f"""
+        SELECT
+            s.session_type,
+            s.domain,
+            s.skill,
+            s.started_at,
+            s.ended_at,
+            s.duration_seconds,
+            CASE
+                WHEN JSON_VALID(s.stats_json)
+                THEN JSON_UNQUOTE(JSON_EXTRACT(s.stats_json, '$.accuracy'))
+                ELSE 0
+            END AS accuracy
+        FROM `tabMB Session` s
+        WHERE {where_clause}
+        ORDER BY COALESCE(s.started_at, s.creation) DESC
+        LIMIT 20
+        """,
+        values,
+        as_dict=True,
+    )
+
     return {
         "ok": True,
         "data": {
@@ -249,6 +272,18 @@ def student_report(student_id: str, date_from: str | None = None, date_to: str |
             "attempts": int(attempts_row.get("attempts") or 0),
             "correct": int(attempts_row.get("correct") or 0),
             "domain_breakdown": domain_breakdown,
+            "recent_sessions": [
+                {
+                    "session_type": row.get("session_type"),
+                    "domain": row.get("domain"),
+                    "skill": row.get("skill"),
+                    "started_at": row.get("started_at"),
+                    "ended_at": row.get("ended_at"),
+                    "duration_seconds": int(row.get("duration_seconds") or 0),
+                    "accuracy": float(row.get("accuracy") or 0),
+                }
+                for row in recent_sessions_rows
+            ],
         },
     }
 
