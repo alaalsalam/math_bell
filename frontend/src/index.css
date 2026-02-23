@@ -1,18 +1,19 @@
-*,
-*::before,
-*::after {
+* {
   box-sizing: border-box;
 }
 
 html,
 body,
 #root {
-  margin: 0;
   min-height: 100%;
+  margin: 0;
 }
 
 body {
   font-family: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  background: radial-gradient(circle at 20% 20%, #fef3c7 0%, #f8fafc 45%, #eef2ff 100%);
+  background:
+    radial-gradient(circle at 15% 15%, #fde68a 0%, transparent 30%),
+    radial-gradient(circle at 85% 10%, #bae6fd 0%, transparent 32%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
   color: #0f172a;
 }
