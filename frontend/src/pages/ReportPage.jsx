@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import Confetti from "../kidfx/confetti";
 import { calcStarsFromScore } from "../kidfx/rewards";
+import { getChallengeMessage } from "../saudi/challenge_messages";
 import { getSaudiMessage } from "../saudi/saudi_messages";
 import { endSession } from "../api/client";
 
@@ -79,10 +80,10 @@ function ReportPage() {
           </p>
 
           <p className="ok-text">{getSaudiMessage("daily_comeback")}</p>
-          {report.daily_challenge ? <p className="ok-text">يا سلام عليك! ختمت تحدي اليوم 🔥</p> : null}
+          {report.daily_challenge ? <p className="ok-text">{getChallengeMessage("challenge_done")}</p> : null}
           {(report.earned_badges || []).length ? (
             <p className="ok-text">
-              شارات جديدة: {(report.earned_badges || []).map((item) => item.title_ar).join("، ")}
+              {getChallengeMessage("badge_earned")}: {(report.earned_badges || []).map((item) => item.title_ar).join("، ")}
             </p>
           ) : null}
           {streakBroken ? <p className="error-text">فاتك أمس 😢 بس نقدر نرجع أقوى اليوم!</p> : null}

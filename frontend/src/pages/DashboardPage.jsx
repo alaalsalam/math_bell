@@ -8,6 +8,7 @@ import {
   getWeeklyLeaderboard,
 } from "../api/client";
 import { getTimeGreeting } from "../saudi/greetings";
+import { getChallengeMessage } from "../saudi/challenge_messages";
 import { getDailyTip } from "../saudi/tips";
 import { getStoredStudent } from "../utils/storage";
 
@@ -58,6 +59,12 @@ function DashboardPage() {
 
   const tip = useMemo(() => getDailyTip(), []);
   const greeting = useMemo(() => getTimeGreeting(), []);
+  const challengeStartMessage = useMemo(() => getChallengeMessage("challenge_start"), []);
+  const leaderboardMessage = useMemo(() => getChallengeMessage("leaderboard_rank"), []);
+  const myRank = useMemo(
+    () => (weeklyTop || []).findIndex((row) => String(row.name) === String(student?.student_id)),
+    [weeklyTop, student?.student_id]
+  );
 
   return (
     <PageShell title="لوحتي" subtitle={greeting}>
@@ -74,6 +81,7 @@ function DashboardPage() {
             <p>
               المهارة: <strong>{dailyChallenge?.suggested_skill || "أي مهارة متاحة"}</strong>
             </p>
+            <p className="ok-text">{challengeStartMessage}</p>
             <button
               className="primary-btn"
               type="button"
@@ -110,6 +118,7 @@ function DashboardPage() {
               </p>
             ))}
             {(weeklyTop || []).length === 0 ? <p>لا توجد بيانات أسبوعية بعد.</p> : null}
+            {myRank >= 0 && myRank < 5 ? <p className="ok-text">{leaderboardMessage}</p> : null}
           </section>
 
           <section className="teacher-block class-card">
