@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "../components/PageShell";
-import { getDailyChallenge, getStudentHomeInsights, getWeeklyLeaderboard } from "../api/client";
+import {
+  getDailyChallenge,
+  getStudentHomeInsights,
+  getStudentWeeklyProgress,
+  getWeeklyLeaderboard,
+} from "../api/client";
 import { getTimeGreeting } from "../saudi/greetings";
 import { getDailyTip } from "../saudi/tips";
 import { getStoredStudent } from "../utils/storage";
@@ -14,6 +19,7 @@ function DashboardPage() {
   const [insight, setInsight] = useState(null);
   const [dailyChallenge, setDailyChallenge] = useState(null);
   const [weeklyTop, setWeeklyTop] = useState([]);
+  const [weeklyProgress, setWeeklyProgress] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -27,12 +33,14 @@ function DashboardPage() {
       getStudentHomeInsights({ student_id: student.student_id }),
       getDailyChallenge({ student_id: student.student_id }),
       getWeeklyLeaderboard({ grade: student.grade || undefined }),
+      getStudentWeeklyProgress({ student_id: student.student_id }),
     ])
-      .then(([homeRes, challengeRes, leaderboardRes]) => {
+      .then(([homeRes, challengeRes, leaderboardRes, weeklyRes]) => {
         if (!alive) return;
         setInsight(homeRes?.data || null);
         setDailyChallenge(challengeRes?.data || null);
         setWeeklyTop((leaderboardRes?.data?.leaderboard || []).slice(0, 5));
+        setWeeklyProgress(weeklyRes?.data || null);
       })
       .catch((err) => {
         if (!alive) return;
@@ -121,6 +129,31 @@ function DashboardPage() {
               ))}
               {(insight.skills_mastery || []).length === 0 ? <p>لا توجد بيانات مهارية بعد.</p> : null}
             </div>
+          </section>
+
+          <section className="teacher-block class-card">
+            <h3>رحلة الأسبوع</h3>
+            <p>
+              حل <strong>{weeklyProgress?.goal_weekly || 50}</strong> سؤال هذا الأسبوع
+            </p>
+            <p>
+              {weeklyProgress?.attempts_this_week || 0} / {weeklyProgress?.goal_weekly || 50}
+            </p>
+            <div className="mastery-track">
+              <div
+                className={`mastery-fill ${(weeklyProgress?.achieved && "green") || "orange"}`}
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.round(
+                      ((Number(weeklyProgress?.attempts_this_week || 0) * 100) /
+                        Math.max(1, Number(weeklyProgress?.goal_weekly || 50)))
+                    )
+                  )}%`,
+                }}
+              />
+            </div>
+            {weeklyProgress?.achieved ? <p className="ok-text">يا سلام! ختمت هدف الأسبوع 🎉</p> : null}
           </section>
 
           <section className="teacher-block actions-inline">

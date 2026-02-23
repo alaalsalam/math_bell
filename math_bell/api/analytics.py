@@ -633,3 +633,53 @@ def student_home(student_id: str):
             "skills_mastery": skills_mastery,
         },
     }
+
+
+@frappe.whitelist(allow_guest=True)
+def student_weekly_progress(student_id: str):
+    student_id = (student_id or "").strip()
+    if not student_id:
+        frappe.throw(_("student_id is required"))
+
+    if not frappe.db.exists("MB Student Profile", student_id):
+        frappe.throw(_("Student '{0}' does not exist").format(student_id))
+
+    today = now_datetime().date()
+    week_start = add_days(today, -today.weekday())
+    week_end = add_days(week_start, 6)
+
+    row = frappe.db.sql(
+        """
+        SELECT
+            COUNT(al.name) AS attempts_this_week,
+            SUM(CASE WHEN al.is_correct = 1 THEN 1 ELSE 0 END) AS correct_this_week
+        FROM `tabMB Attempt Log` al
+        INNER JOIN `tabMB Session` s ON s.name = al.session
+        WHERE s.student = %(student_id)s
+          AND DATE(COALESCE(s.started_at, s.creation)) BETWEEN %(week_start)s AND %(week_end)s
+        """,
+        {
+            "student_id": student_id,
+            "week_start": week_start,
+            "week_end": week_end,
+        },
+        as_dict=True,
+    )[0]
+
+    attempts = _as_int(row.get("attempts_this_week"))
+    correct = _as_int(row.get("correct_this_week"))
+    goal_weekly = 50
+    achieved = attempts >= goal_weekly
+
+    return {
+        "ok": True,
+        "data": {
+            "student_id": student_id,
+            "week_start": str(week_start),
+            "week_end": str(week_end),
+            "attempts_this_week": attempts,
+            "correct_this_week": correct,
+            "goal_weekly": goal_weekly,
+            "achieved": achieved,
+        },
+    }

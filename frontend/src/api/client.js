@@ -181,3 +181,7 @@ export async function getWeeklyLeaderboard({ grade, class_group } = {}) {
     class_group,
   });
 }
+
+export async function getStudentWeeklyProgress({ student_id }) {
+  return request("math_bell.api.analytics.student_weekly_progress", { student_id });
+}
