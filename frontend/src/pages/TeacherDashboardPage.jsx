@@ -165,6 +165,9 @@ function TeacherDashboardPage() {
               <Link className="teacher-link" to="/teacher/leaderboard">
                 لوحة الشرف الأسبوعية
               </Link>
+              <Link className="teacher-link" to="/teacher/risk">
+                التدخل المبكر
+              </Link>
             </div>
           </section>
 
