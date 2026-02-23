@@ -1,11 +1,10 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { getStoredStudent } from "../utils/storage";
+import { isStudentLoggedIn } from "../utils/storage";
 
 function RequireStudent({ children }) {
   const location = useLocation();
-  const student = getStoredStudent();
 
-  if (!student?.student_id) {
+  if (!isStudentLoggedIn()) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
