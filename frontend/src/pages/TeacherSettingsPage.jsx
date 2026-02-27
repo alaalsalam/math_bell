@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
-import { getSystemSettings, updateSystemSettings } from "../api/client";
+import {
+  DEFAULT_TEACHER_QUICK_SETTINGS,
+  readTeacherQuickSettings,
+  writeTeacherQuickSettings,
+} from "../utils/teacherQuickSettings";
 
 const ENGINE_OPTIONS = [
   { key: "mcq", label: "أسئلة سريعة" },
@@ -15,39 +19,18 @@ function TeacherSettingsPage() {
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
 
-  const [form, setForm] = useState({
-    teacher_passcode: "1234",
-    default_bell_duration_seconds: 600,
-    default_questions_per_session: 10,
-    enable_sound: 1,
-    enable_confetti: 1,
-    enable_balloons: 1,
-    allow_guest_play: 0,
-    show_only_skills_with_questions: 1,
-    enabled_game_engines: ["mcq", "drag_drop_groups", "vertical_column", "fraction_builder"],
-  });
+  const [form, setForm] = useState(DEFAULT_TEACHER_QUICK_SETTINGS);
 
   useEffect(() => {
-    let alive = true;
-    async function loadSettings() {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await getSystemSettings();
-        if (!alive) return;
-        setForm((prev) => ({ ...prev, ...(res?.data || {}) }));
-      } catch (err) {
-        if (!alive) return;
-        setError(err.message || "فشل تحميل الإعدادات");
-      } finally {
-        if (!alive) return;
-        setLoading(false);
-      }
+    setLoading(true);
+    setError("");
+    try {
+      setForm(readTeacherQuickSettings());
+    } catch (err) {
+      setError(err.message || "فشل تحميل الإعدادات");
+    } finally {
+      setLoading(false);
     }
-    loadSettings();
-    return () => {
-      alive = false;
-    };
   }, []);
 
   function setField(field, value) {
@@ -72,9 +55,9 @@ function TeacherSettingsPage() {
     setError("");
     setOk("");
     try {
-      const res = await updateSystemSettings(form);
-      setForm((prev) => ({ ...prev, ...(res?.data || {}) }));
-      setOk("تم حفظ الإعدادات");
+      const saved = writeTeacherQuickSettings(form);
+      setForm(saved);
+      setOk("تم حفظ الإعدادات محليًا ✅");
     } catch (err) {
       setError(err.message || "فشل حفظ الإعدادات");
     } finally {
@@ -82,19 +65,27 @@ function TeacherSettingsPage() {
     }
   }
 
+  function resetDefaults() {
+    const defaults = { ...DEFAULT_TEACHER_QUICK_SETTINGS };
+    setForm(defaults);
+    writeTeacherQuickSettings(defaults);
+    setOk("تمت إعادة الإعدادات للوضع الافتراضي");
+  }
+
   return (
-    <PageShell title="إعدادات النظام" subtitle="التحكم الكامل بمنصة Math Bell">
+    <PageShell title="أدوات المعلمة السريعة" subtitle="بدون Desk: إعدادات خفيفة ومحفوظة على هذا الجهاز">
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
       {ok ? <p className="ok-text">{ok}</p> : null}
 
       {!loading ? (
         <form className="auth-form" onSubmit={saveSettings}>
+          <p className="ok-text">تعمل هذه الإعدادات مباشرة داخل الواجهة بدون الحاجة لشاشات الخلفية.</p>
           <input
             className="field"
             value={form.teacher_passcode || ""}
             onChange={(e) => setField("teacher_passcode", e.target.value)}
-            placeholder="رمز وضع المعلمة"
+            placeholder="رمز وضع المعلمة (محلي)"
           />
           <input
             className="field"
@@ -138,14 +129,6 @@ function TeacherSettingsPage() {
           <label>
             <input
               type="checkbox"
-              checked={Boolean(form.allow_guest_play)}
-              onChange={(e) => setField("allow_guest_play", e.target.checked ? 1 : 0)}
-            />
-            السماح باللعب كضيف
-          </label>
-          <label>
-            <input
-              type="checkbox"
               checked={Boolean(form.show_only_skills_with_questions)}
               onChange={(e) => setField("show_only_skills_with_questions", e.target.checked ? 1 : 0)}
             />
@@ -170,6 +153,9 @@ function TeacherSettingsPage() {
 
           <button type="submit" className="primary-btn" disabled={saving}>
             {saving ? "..." : "حفظ الإعدادات"}
+          </button>
+          <button type="button" className="secondary-btn" onClick={resetDefaults} disabled={saving}>
+            إعادة الافتراضي
           </button>
         </form>
       ) : null}

@@ -17,6 +17,7 @@ import TeacherCurriculumPage from "../pages/TeacherCurriculumPage";
 import TeacherStudentPage from "../pages/TeacherStudentPage";
 import TeacherStudentsPage from "../pages/TeacherStudentsPage";
 import TeacherSettingsPage from "../pages/TeacherSettingsPage";
+import SplashAishaPage from "../pages/SplashAishaPage";
 
 function AppRouter() {
   return (
@@ -28,7 +29,15 @@ function AppRouter() {
           path="/"
           element={
             <RequireStudent>
-              <Navigate to="/welcome" replace />
+              <Navigate to="/splash" replace />
+            </RequireStudent>
+          }
+        />
+        <Route
+          path="/splash"
+          element={
+            <RequireStudent>
+              <SplashAishaPage />
             </RequireStudent>
           }
         />

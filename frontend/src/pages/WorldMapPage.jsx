@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { loadBootstrap } from "../utils/bootstrapCache";
 import { getStoredStudent } from "../utils/storage";
+import { mergeTeacherSettings } from "../utils/teacherQuickSettings";
 
 const REGION_MAP = [
   { key: "addition_forest", icon: "🌳", title: "غابة الجمع" },
@@ -64,7 +65,7 @@ function WorldMapPage() {
       .then((data) => {
         if (!alive) return;
         setSkills(data?.skills || []);
-        setSettings(data?.settings || { default_bell_duration_seconds: 600 });
+        setSettings(mergeTeacherSettings(data?.settings || {}));
       })
       .catch((err) => {
         if (!alive) return;
@@ -102,7 +103,9 @@ function WorldMapPage() {
       `&skill=${encodeURIComponent(skill.name || skill.code)}` +
       `&mode=${encodeURIComponent(mode)}` +
       `&ui=${encodeURIComponent(uiFromGenerator(skill))}` +
-      (quick ? "&question_count=5" : "") +
+      (quick
+        ? "&question_count=5"
+        : `&question_count=${encodeURIComponent(settings.default_questions_per_session || 10)}`) +
       (mode === "bell_session"
         ? `&duration_seconds=${encodeURIComponent(settings.default_bell_duration_seconds || 600)}`
         : "");

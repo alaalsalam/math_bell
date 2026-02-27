@@ -1,5 +1,6 @@
+import { readTeacherQuickSettings } from "./teacherQuickSettings";
+
 const TEACHER_MODE_KEY = "mb_teacher_mode";
-const TEACHER_PASSCODE = "1234";
 
 export function isTeacherModeEnabled() {
   return window.localStorage.getItem(TEACHER_MODE_KEY) === "true";
@@ -14,7 +15,8 @@ export function disableTeacherMode() {
 }
 
 export function verifyTeacherPasscode(input) {
-  return String(input || "") === TEACHER_PASSCODE;
+  const settings = readTeacherQuickSettings();
+  return String(input || "") === String(settings.teacher_passcode || "1234");
 }
 
-export { TEACHER_MODE_KEY, TEACHER_PASSCODE };
+export { TEACHER_MODE_KEY };

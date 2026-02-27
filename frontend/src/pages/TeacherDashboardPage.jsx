@@ -160,7 +160,7 @@ function TeacherDashboardPage() {
                 قائمة الطلاب التحليلية
               </Link>
               <Link className="teacher-link" to="/teacher/settings">
-                إعدادات النظام
+                أدوات المعلمة السريعة
               </Link>
               <Link className="teacher-link" to="/teacher/leaderboard">
                 لوحة الشرف الأسبوعية

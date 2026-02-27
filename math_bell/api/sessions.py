@@ -1,4 +1,6 @@
 import json
+import hashlib
+import re
 
 import frappe
 from frappe import _
@@ -10,6 +12,7 @@ from math_bell.api.helpers import (
     normalize_int,
     parse_doc_json,
     parse_json_input,
+    resolve_grade_link_name,
     to_json_string,
     validate_skill_belongs_to_grade_domain,
 )
@@ -28,8 +31,29 @@ def _question_ui_matches(question: dict, ui: str) -> bool:
     return ui == "mcq"
 
 
+def _question_signature(generator_type: str, difficulty, question: dict) -> str:
+    canonical = {
+        "g": (generator_type or "").strip(),
+        "d": str(difficulty or ""),
+        "q": question or {},
+    }
+    raw = json.dumps(canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+
+
+def _stable_pick_rank(session_seed: str, question_ref: str) -> int:
+    token = hashlib.sha256(f"{session_seed}:{question_ref}".encode("utf-8")).hexdigest()[:12]
+    return int(token, 16)
+
+
 def _get_question_candidates(
-    skill: str | None, grade: str, domain: str, limit: int = 12, ui: str = "mcq"
+    skill: str | None,
+    grade: str,
+    domain: str,
+    limit: int = 12,
+    ui: str = "mcq",
+    excluded_signatures: set[str] | None = None,
+    session_seed: str = "",
 ) -> list[dict]:
     filters: dict = {"is_active": 1}
 
@@ -51,10 +75,13 @@ def _get_question_candidates(
         filters=filters,
         fields=["name", "skill", "template", "difficulty", "question_json", "answer_json"],
         order_by="difficulty asc, creation asc",
-        limit_page_length=limit,
+        limit_page_length=max(limit * 5, limit),
     )
 
-    payload = []
+    preferred = []
+    fallback = []
+    seen_signatures: set[str] = set()
+    excluded = excluded_signatures or set()
     for row in rows:
         try:
             question = json.loads(row.get("question_json") or "{}")
@@ -65,20 +92,33 @@ def _get_question_candidates(
         except Exception:
             answer = {}
         if _question_ui_matches(question, ui):
-            payload.append(
-                {
-                    "question_ref": row.get("name"),
-                    "skill": row.get("skill"),
-                    "template": row.get("template"),
-                    "difficulty": row.get("difficulty"),
-                    "question": question,
-                    "answer": answer,
-                }
-            )
-        if len(payload) >= limit:
-            break
+            signature = _question_signature("static", row.get("difficulty"), question)
+            if signature in seen_signatures:
+                continue
+            seen_signatures.add(signature)
+            item = {
+                "question_ref": row.get("name"),
+                "skill": row.get("skill"),
+                "template": row.get("template"),
+                "difficulty": row.get("difficulty"),
+                "question": question,
+                "answer": answer,
+                "signature": signature,
+                "repeat_fallback": 1 if signature in excluded else 0,
+            }
+            if signature in excluded:
+                fallback.append(item)
+            else:
+                preferred.append(item)
 
-    return payload
+    seed = session_seed or "static-seed"
+    preferred.sort(key=lambda item: _stable_pick_rank(seed, item.get("question_ref") or ""))
+    fallback.sort(key=lambda item: _stable_pick_rank(seed, item.get("question_ref") or ""))
+
+    output = preferred[:limit]
+    if len(output) < limit:
+        output.extend(fallback[: max(0, limit - len(output))])
+    return output
 
 
 def _extract_answer_value(answer):
@@ -97,7 +137,43 @@ def _normalize_answer_value(value):
         return json.dumps(value, ensure_ascii=False, sort_keys=True)
     if value is None:
         return ""
-    return str(value)
+    raw = str(value).strip()
+    reduced_fraction = _normalize_fraction_text(raw)
+    if reduced_fraction:
+        return reduced_fraction
+    return raw
+
+
+def _normalize_fraction_text(raw: str) -> str | None:
+    """
+    Converts equivalent fraction strings to a canonical token.
+    Example: "2/4" -> "frac:1/2".
+    """
+    if not raw or "/" not in raw:
+        return None
+
+    match = re.fullmatch(r"\s*([+-]?\d+)\s*/\s*([+-]?\d+)\s*", raw)
+    if not match:
+        return None
+
+    numerator = int(match.group(1))
+    denominator = int(match.group(2))
+    if denominator == 0:
+        return None
+
+    sign = -1 if (numerator < 0) ^ (denominator < 0) else 1
+    numerator = abs(numerator)
+    denominator = abs(denominator)
+
+    # Euclidean gcd without extra imports.
+    a, b = numerator, denominator
+    while b:
+        a, b = b, a % b
+    gcd_value = max(a, 1)
+
+    reduced_num = (numerator // gcd_value) * sign
+    reduced_den = denominator // gcd_value
+    return f"frac:{reduced_num}/{reduced_den}"
 
 
 def _is_answer_correct(given_answer, expected_answer) -> bool:
@@ -118,6 +194,7 @@ def _get_student_context(student: str | None, skill: str | None) -> dict:
         "accuracy_last_5": 0,
         "current_streak": 0,
         "total_correct": 0,
+        "recent_signatures": [],
     }
     if not student:
         return context
@@ -150,6 +227,8 @@ def _get_student_context(student: str | None, skill: str | None) -> dict:
             )
         if skill_entry.get("level") is not None:
             context["level"] = normalize_int(skill_entry.get("level"), context["level"])
+        if isinstance(skill_entry.get("recent_signatures"), list):
+            context["recent_signatures"] = [str(item) for item in skill_entry.get("recent_signatures") if item]
 
     rows = frappe.db.sql(
         """
@@ -171,12 +250,23 @@ def _get_student_context(student: str | None, skill: str | None) -> dict:
     return context
 
 
-def _to_client_questions(questions: list[dict]) -> tuple[list[dict], dict]:
+def _to_client_questions(questions: list[dict]) -> tuple[list[dict], dict, dict, dict]:
     output = []
     answer_map = {}
+    signature_map = {}
+    repeat_fallback_count = 0
+    nonce_retry_total = 0
+    nonce_retry_max = 0
     for item in questions:
         ref = item.get("question_ref")
         answer_map[ref] = item.get("answer")
+        if item.get("signature"):
+            signature_map[ref] = item.get("signature")
+        if int(item.get("repeat_fallback") or 0) == 1:
+            repeat_fallback_count += 1
+        nonce_attempts = normalize_int(item.get("nonce_attempts"), 0)
+        nonce_retry_total += max(nonce_attempts - 1, 0)
+        nonce_retry_max = max(nonce_retry_max, max(nonce_attempts - 1, 0))
         output.append(
             {
                 "question_ref": ref,
@@ -186,7 +276,15 @@ def _to_client_questions(questions: list[dict]) -> tuple[list[dict], dict]:
                 "question": item.get("question"),
             }
         )
-    return output, answer_map
+    uniqueness = {
+        "question_count": len(output),
+        "unique_signature_count": len(set(signature_map.values())),
+        "repeat_fallback_count": repeat_fallback_count,
+        "nonce_retry_total": nonce_retry_total,
+        "nonce_retry_max": nonce_retry_max,
+        "history_exhausted": bool(len(output) > 0 and repeat_fallback_count == len(output)),
+    }
+    return output, answer_map, signature_map, uniqueness
 
 
 def _fetch_expected_answer(question_ref: str | None):
@@ -289,7 +387,7 @@ def _clamp(value: int, minimum: int, maximum: int) -> int:
     return max(minimum, min(maximum, value))
 
 
-def _update_student_skill_progress(session, attempts: int, correct: int) -> dict:
+def _update_student_skill_progress(session, attempts: int, correct: int, recent_signatures: list[str] | None = None) -> dict:
     if not session.student or not session.skill:
         return {}
 
@@ -325,12 +423,21 @@ def _update_student_skill_progress(session, attempts: int, correct: int) -> dict
             current_level -= 1
     current_level = _clamp(current_level, min_level, max_level)
 
-    all_levels[skill_key] = {
+    merged_signatures = [str(item) for item in (current.get("recent_signatures") or []) if item]
+    if recent_signatures:
+        merged_signatures.extend([str(item) for item in recent_signatures if item])
+    merged_signatures = merged_signatures[-500:]
+
+    next_entry = {
+        **current,
         "level": current_level,
         "attempts": total_attempts,
         "correct": total_correct,
         "accuracy": total_accuracy,
     }
+    if merged_signatures:
+        next_entry["recent_signatures"] = merged_signatures
+    all_levels[skill_key] = next_entry
     student.skill_levels_json = to_json_string(all_levels)
     student.save(ignore_permissions=True)
 
@@ -502,11 +609,13 @@ def start_session(
     if session_type not in {"practice", "bell_session"}:
         frappe.throw(_("Invalid session_type. Allowed values: practice, bell_session"))
 
-    ensure_active_link("MB Grade", grade, "Grade")
+    # Resolve simple grade code from frontend and auto-create base grades when missing.
+    # This reduces hard runtime dependency on manual Desk setup.
+    grade_name, _grade_code = resolve_grade_link_name(grade, auto_create=True)
     ensure_active_link("MB Domain", domain, "Domain")
 
     if skill:
-        validate_skill_belongs_to_grade_domain(skill, grade, domain)
+        validate_skill_belongs_to_grade_domain(skill, grade_name, domain)
     if student:
         ensure_active_link("MB Student Profile", student, "Student")
 
@@ -514,7 +623,7 @@ def start_session(
         {
             "doctype": "MB Session",
             "session_type": session_type,
-            "grade": grade,
+            "grade": grade_name,
             "domain": domain,
             "skill": skill,
             "student": student,
@@ -535,6 +644,7 @@ def start_session(
 
     questions = []
     generated = False
+    student_context = _get_student_context(student, skill) if skill else {}
     if skill:
         skill_meta = frappe.db.get_value(
             "MB Skill",
@@ -545,11 +655,10 @@ def start_session(
         adaptive_enabled = normalize_bool((skill_meta or {}).get("adaptive_enabled"))
         generator_type = ((skill_meta or {}).get("generator_type") or "static").strip()
         if adaptive_enabled and generator_type and generator_type != "static":
-            student_context = _get_student_context(student, skill)
             questions = generate_questions(
                 {
                     "name": skill_meta.get("name"),
-                    "grade": grade,
+                    "grade": grade_name,
                     "generator_type": generator_type,
                     "difficulty_min": skill_meta.get("difficulty_min"),
                     "difficulty_max": skill_meta.get("difficulty_max"),
@@ -561,16 +670,25 @@ def start_session(
             generated = True
 
     if not questions:
+        recent_signatures = set(student_context.get("recent_signatures") or [])
         questions = _get_question_candidates(
-            skill=skill, grade=grade, domain=domain, limit=question_count, ui=ui
+            skill=skill,
+            grade=grade_name,
+            domain=domain,
+            limit=question_count,
+            ui=ui,
+            excluded_signatures=recent_signatures if recent_signatures else None,
+            session_seed=doc.name,
         )
 
-    client_questions, answer_map = _to_client_questions(questions)
+    client_questions, answer_map, signature_map, uniqueness = _to_client_questions(questions)
     question_map = {item.get("question_ref"): item.get("question") for item in questions}
     session_stats = parse_doc_json(doc.stats_json)
     session_stats["generated"] = generated
     session_stats["answer_map"] = answer_map
     session_stats["question_map"] = question_map
+    session_stats["signature_map"] = signature_map
+    session_stats["uniqueness"] = uniqueness
     doc.stats_json = to_json_string(session_stats)
     doc.save(ignore_permissions=True)
 
@@ -580,6 +698,7 @@ def start_session(
             "session_id": doc.name,
             "ui": ui,
             "generated": generated,
+            "uniqueness": uniqueness,
             "question_count": len(client_questions),
             "questions": client_questions,
         },
@@ -726,6 +845,7 @@ def end_session(session_id: str):
         "duration_seconds": session.duration_seconds or duration_seconds,
         "stars": stars,
         "generated": normalize_bool(extra_stats.get("generated")),
+        "uniqueness": extra_stats.get("uniqueness") if isinstance(extra_stats.get("uniqueness"), dict) else {},
         "daily_challenge": daily_challenge_flag,
         "common_mistake": "سيتم إضافة تحليل الأخطاء قريباً",
     }
@@ -750,7 +870,9 @@ def end_session(session_id: str):
             domain=session.domain,
             persist=False,
         )
-        progress = _update_student_skill_progress(session, attempts, correct)
+        signature_map = extra_stats.get("signature_map") if isinstance(extra_stats.get("signature_map"), dict) else {}
+        session_signatures = [str(sig) for sig in signature_map.values() if sig]
+        progress = _update_student_skill_progress(session, attempts, correct, recent_signatures=session_signatures)
         mastery_reached = False
         if progress:
             report.update(progress)

@@ -60,6 +60,53 @@ def ensure_active_link(doctype: str, name: str | None, label: str) -> None:
             frappe.throw(_("{0} '{1}' is inactive").format(label, name))
 
 
+def resolve_grade_link_name(grade_input: str | None, auto_create: bool = False) -> tuple[str, str]:
+    """
+    Resolve a user-facing grade code ("1"/"2") to MB Grade link name.
+    Returns: (grade_name, grade_code).
+    """
+    requested = str(grade_input or "").strip()
+    if not requested:
+        frappe.throw(_("Grade is required"))
+
+    if requested in {"الصف الأول", "اول", "الأول"}:
+        requested = "1"
+    elif requested in {"الصف الثاني", "ثاني", "الثاني"}:
+        requested = "2"
+
+    if frappe.db.exists("MB Grade", requested):
+        grade_row = frappe.db.get_value("MB Grade", requested, ["name", "grade", "is_active"], as_dict=True)
+        if grade_row and int(grade_row.get("is_active") or 0) == 0:
+            frappe.throw(_("Grade '{0}' is inactive").format(requested))
+        return str(grade_row.get("name")), str(grade_row.get("grade") or requested)
+
+    by_grade = frappe.db.get_value(
+        "MB Grade",
+        {"grade": requested},
+        ["name", "grade", "is_active"],
+        as_dict=True,
+    )
+    if by_grade:
+        if int(by_grade.get("is_active") or 0) == 0:
+            frappe.throw(_("Grade '{0}' is inactive").format(by_grade.get("name")))
+        return str(by_grade.get("name")), str(by_grade.get("grade") or requested)
+
+    if auto_create and requested in {"1", "2"}:
+        title_map = {"1": "الصف الأول", "2": "الصف الثاني"}
+        doc = frappe.get_doc(
+            {
+                "doctype": "MB Grade",
+                "grade": requested,
+                "title_ar": title_map.get(requested),
+                "is_active": 1,
+            }
+        )
+        doc.insert(ignore_permissions=True)
+        return str(doc.name), requested
+
+    frappe.throw(_("Grade '{0}' does not exist").format(requested))
+
+
 def validate_skill_belongs_to_grade_domain(skill: str, grade: str, domain: str) -> dict[str, Any]:
     row = frappe.db.get_value(
         "MB Skill",
@@ -86,4 +133,3 @@ def parse_doc_json(value: str | None) -> dict[str, Any]:
         return parsed if isinstance(parsed, dict) else {}
     except Exception:
         return {}
-

@@ -13,9 +13,12 @@ import VerticalColumnGame from "../games/VerticalColumnGame";
 import FractionBuilderGame from "../games/FractionBuilderGame";
 import { getStoredStudent } from "../utils/storage";
 import { loadBootstrap } from "../utils/bootstrapCache";
+import { mergeTeacherSettings } from "../utils/teacherQuickSettings";
 import { correctPhrases, pickPhrase, wrongPhrases } from "../ui/saudiCopy";
+import { getSaudiMessage } from "../saudi/saudi_messages";
 
 const BELL_DURATION_SECONDS = 600;
+const SESSION_STICKERS = ["⭐", "🏅", "🎯", "🌟", "🏆", "🚀"];
 const ENGINE_COMPONENTS = {
   mcq: BubblePickGame,
   drag_drop_groups: DragDropGroupsGame,
@@ -107,6 +110,9 @@ function RunnerPage() {
   const [pendingHintCount, setPendingHintCount] = useState(0);
   const [hintBubble, setHintBubble] = useState("");
   const [mistakeBadge, setMistakeBadge] = useState("");
+  const [streakBanner, setStreakBanner] = useState("");
+  const [earnedStickers, setEarnedStickers] = useState([]);
+  const [newStickerFx, setNewStickerFx] = useState("");
 
   const [fxMessage, setFxMessage] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
@@ -123,6 +129,10 @@ function RunnerPage() {
   const didFinishRef = useRef(false);
 
   const current = questions[index] || null;
+  const progressPercent = useMemo(() => {
+    if (!questions.length) return 0;
+    return Math.min(100, Math.round(((index + 1) / questions.length) * 100));
+  }, [index, questions.length]);
 
   const subtitle = useMemo(() => {
     if (isDailyChallenge) return "تحدي اليوم 🔥";
@@ -155,11 +165,11 @@ function RunnerPage() {
     loadBootstrap({ studentId: student?.student_id || null })
       .then((data) => {
         if (!alive) return;
-        setFxSettings(data?.settings || {});
+        setFxSettings(mergeTeacherSettings(data?.settings || {}));
       })
       .catch(() => {
         if (!alive) return;
-        setFxSettings({ enable_sound: 1, enable_confetti: 1, enable_balloons: 1 });
+        setFxSettings(mergeTeacherSettings({}));
       });
 
     setLoading(true);
@@ -174,6 +184,9 @@ function RunnerPage() {
     setPendingHintCount(0);
     setHintBubble("");
     setMistakeBadge("");
+    setStreakBanner("");
+    setEarnedStickers([]);
+    setNewStickerFx("");
     setMascotMood("🙂");
     setMascotText("ترى أؤمن فيك 😄");
     didFinishRef.current = false;
@@ -245,6 +258,22 @@ function RunnerPage() {
   function showMessageTemporarily(text) {
     setFxMessage(text);
     window.setTimeout(() => setFxMessage(""), 1200);
+  }
+
+  function showStreakBanner(text) {
+    if (!text) return;
+    setStreakBanner(text);
+    window.setTimeout(() => setStreakBanner(""), 1400);
+  }
+
+  function awardSticker() {
+    const sticker = SESSION_STICKERS[Math.floor(Math.random() * SESSION_STICKERS.length)];
+    setEarnedStickers((prev) => {
+      const next = [...prev, sticker];
+      return next.slice(-8);
+    });
+    setNewStickerFx(sticker);
+    window.setTimeout(() => setNewStickerFx(""), 900);
   }
 
   function triggerConfetti(duration = 1000) {
@@ -344,6 +373,8 @@ function RunnerPage() {
     const usedHintsForQuestion = Number(meta.hint_used_count || pendingHintCount || 0);
     const usedHint = usedHintsForQuestion > 0 || Number(meta.hint_used || 0) > 0;
 
+    tapHaptic([10]);
+    playSound("pop", 0.24);
     setSubmitting(true);
     try {
       const attemptRes = await submitAttemptWithCount({
@@ -366,21 +397,32 @@ function RunnerPage() {
       setMistakeBadge("");
 
       if (isCorrect) {
+        const nextStreak = streakCorrect + 1;
+        const nextCorrect = correct + 1;
         setMascotMood("😄");
         tapHaptic([18, 28]);
         playSound("correct", 0.85);
-        if ((streakCorrect + 1) % 2 === 0) playSound("applause", 0.45);
+        if (nextStreak % 2 === 0) playSound("applause", 0.45);
         triggerConfetti(1000);
         showMessageTemporarily(pickPhrase(correctPhrases, "كفو يا بطل! 👏"));
-        if ((streakCorrect + 1) >= 3) showMessageTemporarily("كفو يا بطل! 👏");
-        if (getStoredStudent()?.display_name) setMascotText(personalizedProgress(getStoredStudent().display_name));
-        if ((streakCorrect + 1) % 3 === 0) {
+        if (nextStreak >= 3) {
+          const streakText = getSaudiMessage("streak");
+          showStreakBanner(streakText);
+          setMascotText(streakText);
+        } else if (getStoredStudent()?.display_name) {
+          setMascotText(personalizedProgress(getStoredStudent().display_name));
+        }
+        if (nextStreak % 3 === 0) {
           triggerBalloons(2000);
           playSound("pop", 0.5);
+          awardSticker();
+          showMessageTemporarily("ملصق جديد! ⭐");
         }
-        if ((correct + 1) % 5 === 0) {
+        if (nextCorrect % 5 === 0) {
           triggerConfetti(1200);
-          showMessageTemporarily("يا سلام! مستوى أعلى 🎮");
+          playSound("applause", 0.65);
+          showMessageTemporarily(getSaudiMessage("level_up"));
+          awardSticker();
         }
       } else {
         setMascotMood("🤔");
@@ -388,6 +430,7 @@ function RunnerPage() {
         playSound("wrong", 0.7);
         showMessageTemporarily(pickPhrase(wrongPhrases, "قريب مره… جرّب ثانية 😉"));
         setMascotText("بس ركز معي شوي 👀");
+        setStreakBanner("");
         if (backendHint) {
           showHintBubble(backendHint);
         }
@@ -453,6 +496,7 @@ function RunnerPage() {
 
       {!loading && !error && current ? (
         <>
+          {streakBanner ? <div className="streak-banner">{streakBanner}</div> : null}
           <div className="runner-meta">
             <span>
               {index + 1} / {questions.length}
@@ -464,14 +508,43 @@ function RunnerPage() {
             <span>التلميحات المتبقية: {hintsLeft} 💡</span>
           </div>
 
-          <CurrentEngine
-            question={current.question}
-            disabled={submitting}
-            onAnswer={handleAnswer}
-            feedback={feedback}
-            questionIndex={index}
-            totalQuestions={questions.length}
-          />
+          <div className="runner-status-grid">
+            <div className={`streak-chip ${streakCorrect >= 3 ? "hot" : ""}`}>
+              سلسلة النجاح: {streakCorrect} 🔥
+            </div>
+            <div className="ring-wrap">
+              <div className="progress-ring runner-progress-ring" style={{ "--progress": `${progressPercent}%` }}>
+                <span>{progressPercent}%</span>
+              </div>
+            </div>
+            <div className="sticker-pouch">
+              <small>ملصقات الجلسة</small>
+              <div className="sticker-row">
+                {earnedStickers.length ? (
+                  earnedStickers.map((sticker, stickerIndex) => (
+                    <span key={`${stickerIndex}-${sticker}`} className="sticker-token">
+                      {sticker}
+                    </span>
+                  ))
+                ) : (
+                  <span className="sticker-empty">ابدأ الحل وخذ أول ملصق ✨</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {newStickerFx ? <div className="new-sticker-fx">+{newStickerFx}</div> : null}
+
+          <div className="question-stage" key={`question-${index}`}>
+            <CurrentEngine
+              question={current.question}
+              disabled={submitting}
+              onAnswer={handleAnswer}
+              feedback={feedback}
+              questionIndex={index}
+              totalQuestions={questions.length}
+            />
+          </div>
 
           <div className="actions-inline">
             <button

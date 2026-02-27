@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { loadBootstrap } from "../utils/bootstrapCache";
 import { getStoredStudent } from "../utils/storage";
+import { mergeTeacherSettings } from "../utils/teacherQuickSettings";
 
 const DOMAIN_LABELS = {
   Addition: "الجمع",
@@ -30,6 +31,12 @@ function SkillsPage() {
   const [error, setError] = useState("");
   const [skills, setSkills] = useState([]);
   const [selectedUi, setSelectedUi] = useState("mcq");
+  const [settings, setSettings] = useState({
+    default_bell_duration_seconds: 600,
+    default_questions_per_session: 10,
+    show_only_skills_with_questions: 1,
+    enabled_game_engines: GAME_TYPES.map((item) => item.value),
+  });
   const student = getStoredStudent();
 
   useEffect(() => {
@@ -40,12 +47,20 @@ function SkillsPage() {
     loadBootstrap({ studentId: student?.student_id || null })
       .then((data) => {
         if (!alive) return;
+        const mergedSettings = mergeTeacherSettings(data?.settings || {});
+        setSettings(mergedSettings);
         const allSkills = data?.skills || [];
         const filtered = allSkills
           .filter((item) => String(item.grade) === String(grade) && item.domain === domain)
-          .filter((item) => Number(item.question_count || 0) > 0)
+          .filter((item) =>
+            Number(mergedSettings.show_only_skills_with_questions)
+              ? Number(item.question_count || 0) > 0
+              : true
+          )
           .sort((a, b) => Number(a.skill_order || 0) - Number(b.skill_order || 0));
         setSkills(filtered);
+        const enabledEngines = mergedSettings.enabled_game_engines || [];
+        setSelectedUi((prev) => (enabledEngines.includes(prev) ? prev : enabledEngines[0] || "mcq"));
       })
       .catch((err) => {
         if (!alive) return;
@@ -67,10 +82,16 @@ function SkillsPage() {
   );
 
   function startPlay(skill, sessionType) {
+    const enabledEngines = settings.enabled_game_engines || [];
+    const effectiveUi = enabledEngines.includes(selectedUi) ? selectedUi : enabledEngines[0] || "mcq";
     navigate(
       `/play?grade=${encodeURIComponent(grade)}&domain=${encodeURIComponent(domain)}&skill=${encodeURIComponent(
         skill
-      )}&mode=${encodeURIComponent(sessionType)}&ui=${encodeURIComponent(selectedUi)}`
+      )}&mode=${encodeURIComponent(sessionType)}&ui=${encodeURIComponent(effectiveUi)}` +
+        `&question_count=${encodeURIComponent(settings.default_questions_per_session || 10)}` +
+        (sessionType === "bell_session"
+          ? `&duration_seconds=${encodeURIComponent(settings.default_bell_duration_seconds || 600)}`
+          : "")
     );
   }
 
@@ -88,7 +109,7 @@ function SkillsPage() {
           value={selectedUi}
           onChange={(event) => setSelectedUi(event.target.value)}
         >
-          {GAME_TYPES.map((type) => (
+          {GAME_TYPES.filter((type) => (settings.enabled_game_engines || []).includes(type.value)).map((type) => (
             <option key={type.value} value={type.value}>
               {type.label}
             </option>
