@@ -67,7 +67,9 @@ def get_bootstrap(student_id: str | None = None):
     student_level, student_skill_levels = _load_student_skill_state(student_id)
     use_locking = bool(student_id and frappe.db.exists("MB Student Profile", student_id))
     unlock_state = {}
-    visible_skill_names = set()
+    # Important: keep the unlock set returned by evaluate_unlocks.
+    # Resetting it here hides all skills for new students.
+    # visible_skill_names = set()
     if use_locking:
         unlock_state = evaluate_unlocks(student_id=student_id, persist=False)
         visible_skill_names = set(unlock_state.get("visible_skill_names") or [])
@@ -151,6 +153,7 @@ def get_bootstrap(student_id: str | None = None):
             mastered = _is_mastered(entry if isinstance(entry, dict) else {}, row.get("mastery_threshold") or 0.7)
 
             if use_locking:
+                # Locking mode depends on precomputed visibility from skill graph.
                 unlocked = skill_name in visible_skill_names
             else:
                 unlocked = True
