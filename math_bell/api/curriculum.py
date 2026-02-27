@@ -68,7 +68,7 @@ def _skills_for_pack(pack_name: str) -> list[dict]:
             "show_in_student_app",
             "is_active",
         ],
-        order_by="`order` asc, creation asc",
+        order_by="order asc, creation asc",
         limit_page_length=1000,
     )
 
@@ -85,7 +85,7 @@ def list_packs(grade: str | None = None, domain: str | None = None):
         "MB Skill Pack",
         filters=filters,
         fields=["name", "title", "grade", "domain", "is_enabled", "description_ar", "order"],
-        order_by="grade asc, domain asc, `order` asc, creation asc",
+        order_by="grade asc, domain asc, order asc, creation asc",
         limit_page_length=500,
     )
 

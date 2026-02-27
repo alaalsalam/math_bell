@@ -50,7 +50,7 @@ def _skill_catalog(grade: str | None) -> list[SkillRow]:
         "MB Skill",
         filters=filters,
         fields=["name", "code", "title_ar", "order"],
-        order_by="grade asc, domain asc, `order` asc, creation asc",
+        order_by="grade asc, domain asc, order asc, creation asc",
         limit_page_length=500,
     )
     return [

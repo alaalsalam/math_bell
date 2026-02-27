@@ -28,23 +28,34 @@ def _pick_daily_target(student_id: str) -> dict:
         domain = frappe.db.get_value("MB Skill", suggested_skill, "domain")
 
     if not domain:
-        domain = (
-            frappe.db.get_value(
-                "MB Skill",
-                {"grade": grade, "is_active": 1, "show_in_student_app": 1},
-                "domain",
-                order_by="`order` asc, creation asc",
-            )
-            or "Addition"
+        first_row = frappe.get_all(
+            "MB Skill",
+            filters={"grade": grade, "is_active": 1, "show_in_student_app": 1},
+            fields=["domain", "order", "creation"],
+            limit_page_length=200,
         )
+        first_row.sort(
+            key=lambda row: (
+                int(row.get("order") or 0),
+                str(row.get("creation") or ""),
+            )
+        )
+        domain = (first_row[0].get("domain") if first_row else None) or "Addition"
 
     if not suggested_skill:
-        suggested_skill = frappe.db.get_value(
+        skill_rows = frappe.get_all(
             "MB Skill",
-            {"grade": grade, "domain": domain, "is_active": 1, "show_in_student_app": 1},
-            "name",
-            order_by="`order` asc, creation asc",
+            filters={"grade": grade, "domain": domain, "is_active": 1, "show_in_student_app": 1},
+            fields=["name", "order", "creation"],
+            limit_page_length=200,
         )
+        skill_rows.sort(
+            key=lambda row: (
+                int(row.get("order") or 0),
+                str(row.get("creation") or ""),
+            )
+        )
+        suggested_skill = skill_rows[0].get("name") if skill_rows else None
 
     return {
         "grade": grade,

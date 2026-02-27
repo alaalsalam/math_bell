@@ -60,7 +60,7 @@ def _skill_base_rows(student_id: str):
         "MB Skill",
         filters=filters,
         fields=["name", "code", "title_ar", "grade", "domain", "mastery_threshold", "order"],
-        order_by="grade asc, domain asc, `order` asc, creation asc",
+        order_by="grade asc, domain asc, order asc, creation asc",
         limit_page_length=500,
     )
 
