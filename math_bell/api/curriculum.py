@@ -53,7 +53,7 @@ def _build_prerequisites(created_codes: list[str], idx: int, graph_mode: str, pr
 
 
 def _skills_for_pack(pack_name: str) -> list[dict]:
-    return frappe.get_all(
+    rows = frappe.get_all(
         "MB Skill",
         filters={"pack": pack_name},
         fields=[
@@ -67,10 +67,13 @@ def _skills_for_pack(pack_name: str) -> list[dict]:
             "prerequisites_json",
             "show_in_student_app",
             "is_active",
+            "creation",
         ],
-        order_by="order asc, creation asc",
+        order_by="creation asc",
         limit_page_length=1000,
     )
+    rows.sort(key=lambda row: (normalize_int(row.get("order"), 0), str(row.get("creation") or "")))
+    return rows
 
 
 @frappe.whitelist(allow_guest=True)
@@ -84,9 +87,17 @@ def list_packs(grade: str | None = None, domain: str | None = None):
     packs = frappe.get_all(
         "MB Skill Pack",
         filters=filters,
-        fields=["name", "title", "grade", "domain", "is_enabled", "description_ar", "order"],
-        order_by="grade asc, domain asc, order asc, creation asc",
+        fields=["name", "title", "grade", "domain", "is_enabled", "description_ar", "order", "creation"],
+        order_by="grade asc, domain asc, creation asc",
         limit_page_length=500,
+    )
+    packs.sort(
+        key=lambda row: (
+            str(row.get("grade") or ""),
+            str(row.get("domain") or ""),
+            normalize_int(row.get("order"), 0),
+            str(row.get("creation") or ""),
+        )
     )
 
     payload = []

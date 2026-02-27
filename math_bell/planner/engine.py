@@ -49,9 +49,17 @@ def _skill_catalog(grade: str | None) -> list[SkillRow]:
     rows = frappe.get_all(
         "MB Skill",
         filters=filters,
-        fields=["name", "code", "title_ar", "order"],
-        order_by="grade asc, domain asc, order asc, creation asc",
+        fields=["name", "code", "title_ar", "order", "creation", "grade", "domain"],
+        order_by="grade asc, domain asc, creation asc",
         limit_page_length=500,
+    )
+    rows.sort(
+        key=lambda row: (
+            str(row.get("grade") or ""),
+            str(row.get("domain") or ""),
+            _to_int(row.get("order"), 999),
+            str(row.get("creation") or ""),
+        )
     )
     return [
         SkillRow(

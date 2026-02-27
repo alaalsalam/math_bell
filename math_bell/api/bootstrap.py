@@ -105,8 +105,17 @@ def get_bootstrap(student_id: str | None = None):
             "prerequisites_json",
             "unlock_rule",
             "pack",
+            "creation",
         ],
-        order_by="grade asc, domain asc, order asc, creation asc",
+        order_by="grade asc, domain asc, creation asc",
+    )
+    skills.sort(
+        key=lambda row: (
+            str(row.get("grade") or ""),
+            str(row.get("domain") or ""),
+            _as_int(row.get("skill_order"), 0),
+            str(row.get("creation") or ""),
+        )
     )
     skills = filter_enabled_pack_skills(skills)
     skill_question_counts = frappe.get_all(

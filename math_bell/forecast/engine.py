@@ -56,13 +56,22 @@ def _skill_base_rows(student_id: str):
     if grade:
         filters["grade"] = grade
 
-    return frappe.get_all(
+    rows = frappe.get_all(
         "MB Skill",
         filters=filters,
-        fields=["name", "code", "title_ar", "grade", "domain", "mastery_threshold", "order"],
-        order_by="grade asc, domain asc, order asc, creation asc",
+        fields=["name", "code", "title_ar", "grade", "domain", "mastery_threshold", "order", "creation"],
+        order_by="grade asc, domain asc, creation asc",
         limit_page_length=500,
     )
+    rows.sort(
+        key=lambda row: (
+            str(row.get("grade") or ""),
+            str(row.get("domain") or ""),
+            _to_int(row.get("order"), 0),
+            str(row.get("creation") or ""),
+        )
+    )
+    return rows
 
 
 def _accuracy_last_10(student_id: str, skill_name: str):

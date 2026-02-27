@@ -95,9 +95,18 @@ def evaluate_unlocks(
             "prerequisites_json",
             "pack",
             "order",
+            "creation",
         ],
-        order_by="grade asc, domain asc, order asc, creation asc",
+        order_by="grade asc, domain asc, creation asc",
         limit_page_length=5000,
+    )
+    skills.sort(
+        key=lambda row: (
+            str(row.get("grade") or ""),
+            str(row.get("domain") or ""),
+            normalize_int(row.get("order"), 0),
+            str(row.get("creation") or ""),
+        )
     )
 
     pack_enabled = _enabled_pack_map()

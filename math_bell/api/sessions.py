@@ -483,12 +483,15 @@ def _unlock_next_skill_if_mastered(session, progress: dict) -> dict:
             "domain": current_skill.get("domain"),
             "order": [">", normalize_int(current_skill.get("order"), 0)],
         },
-        fields=["name", "code", "title_ar", "min_level_required", "order"],
-        order_by="order asc, creation asc",
-        limit_page_length=1,
+        fields=["name", "code", "title_ar", "min_level_required", "order", "creation"],
+        order_by="creation asc",
+        limit_page_length=200,
     )
     if not next_skills:
         return {}
+    next_skills.sort(
+        key=lambda row: (normalize_int(row.get("order"), 0), str(row.get("creation") or ""))
+    )
 
     next_skill = next_skills[0]
     student_level = normalize_int(
