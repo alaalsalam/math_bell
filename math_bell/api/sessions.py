@@ -484,7 +484,7 @@ def _unlock_next_skill_if_mastered(session, progress: dict) -> dict:
             "order": [">", normalize_int(current_skill.get("order"), 0)],
         },
         fields=["name", "code", "title_ar", "min_level_required", "order"],
-        order_by="`order` asc, creation asc",
+        order_by="order asc, creation asc",
         limit_page_length=1,
     )
     if not next_skills:

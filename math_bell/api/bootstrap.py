@@ -96,7 +96,7 @@ def get_bootstrap(student_id: str | None = None):
             "domain",
             "title_ar",
             "description_ar",
-            "`order` as skill_order",
+            "order as skill_order",
             "mastery_threshold",
             "is_featured",
             "min_level_required",
@@ -106,7 +106,7 @@ def get_bootstrap(student_id: str | None = None):
             "unlock_rule",
             "pack",
         ],
-        order_by="grade asc, domain asc, `order` asc, creation asc",
+        order_by="grade asc, domain asc, order asc, creation asc",
     )
     skills = filter_enabled_pack_skills(skills)
     skill_question_counts = frappe.get_all(
@@ -126,6 +126,7 @@ def get_bootstrap(student_id: str | None = None):
     question_count_map: dict[str, int] = {
         row.get("skill"): int(row.get("question_count") or 0) for row in skill_question_counts
     }
+    has_any_question_rows = any((count or 0) > 0 for count in question_count_map.values())
     grouped_skills: dict[tuple[str, str], list[dict]] = {}
     for row in skills:
         grouped_skills.setdefault((row.get("grade"), row.get("domain")), []).append(row)
@@ -141,7 +142,13 @@ def get_bootstrap(student_id: str | None = None):
             has_generated_content = _as_bool(row.get("adaptive_enabled")) and (
                 (row.get("generator_type") or "static") != "static"
             )
-            if settings.get("show_only_skills_with_questions") and question_count <= 0 and not has_generated_content:
+            # If question bank is empty on this site, do not hide all skills.
+            if (
+                settings.get("show_only_skills_with_questions")
+                and has_any_question_rows
+                and question_count <= 0
+                and not has_generated_content
+            ):
                 continue
 
             entry = {}

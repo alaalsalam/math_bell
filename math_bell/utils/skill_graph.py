@@ -44,6 +44,18 @@ def _enabled_pack_map() -> dict[str, bool]:
     return {row.get("name"): normalize_bool(row.get("is_enabled")) for row in rows}
 
 
+def _is_pack_enabled_for_runtime(pack_name: str | None, pack_enabled: dict[str, bool]) -> bool:
+    """
+    Missing pack records should not hide all skills.
+    Only explicit disabled packs are filtered out.
+    """
+    if not pack_name:
+        return True
+    if pack_name not in pack_enabled:
+        return True
+    return bool(pack_enabled.get(pack_name))
+
+
 def evaluate_unlocks(
     student_id: str,
     grade: str | None = None,
@@ -84,7 +96,7 @@ def evaluate_unlocks(
             "pack",
             "order",
         ],
-        order_by="grade asc, domain asc, `order` asc, creation asc",
+        order_by="grade asc, domain asc, order asc, creation asc",
         limit_page_length=5000,
     )
 
@@ -99,7 +111,7 @@ def evaluate_unlocks(
         skill_code = row.get("code") or skill_name
         pack_name = row.get("pack")
 
-        if pack_name and not pack_enabled.get(pack_name, False):
+        if not _is_pack_enabled_for_runtime(pack_name, pack_enabled):
             continue
 
         entry = skill_levels.get(skill_code) or skill_levels.get(skill_name) or {}
@@ -111,7 +123,7 @@ def evaluate_unlocks(
         skill_code = row.get("code") or skill_name
         pack_name = row.get("pack")
 
-        if pack_name and not pack_enabled.get(pack_name, False):
+        if not _is_pack_enabled_for_runtime(pack_name, pack_enabled):
             continue
 
         prereqs = parse_prerequisites(row.get("prerequisites_json"))
@@ -162,7 +174,7 @@ def filter_enabled_pack_skills(skills: list[dict]) -> list[dict]:
     output = []
     for row in skills:
         pack_name = row.get("pack")
-        if pack_name and not pack_enabled.get(pack_name, False):
+        if not _is_pack_enabled_for_runtime(pack_name, pack_enabled):
             continue
         output.append(row)
     return output
