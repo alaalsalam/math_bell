@@ -18,7 +18,16 @@ import { correctPhrases, pickPhrase, wrongPhrases } from "../ui/saudiCopy";
 import { getSaudiMessage } from "../saudi/saudi_messages";
 
 const BELL_DURATION_SECONDS = 600;
-const SESSION_STICKERS = ["⭐", "🏅", "🎯", "🌟", "🏆", "🚀"];
+const STICKER_MILESTONES = [2, 4, 6, 8, 10, 12, 15, 18, 21, 24, 27, 30];
+const SESSION_STICKERS = [
+  { emoji: "⭐", title: "نجم البداية", tier: "برونزي", cheer: "بداية قوية يا بطل! هذا أول نجم لك 🌟" },
+  { emoji: "🎯", title: "قنّاص الإجابات", tier: "برونزي", cheer: "تصويب ممتاز! تركيزك عالي جدًا 🎯" },
+  { emoji: "🏅", title: "صائد النقاط", tier: "فضي", cheer: "يا سلام! نقاطك ترتفع بسرعة خرافية 🏅" },
+  { emoji: "🚀", title: "انطلاقة صاروخية", tier: "فضي", cheer: "سرعة + دقة = بطل صاروخي 🚀" },
+  { emoji: "🌟", title: "نجم الحصة", tier: "ذهبي", cheer: "أبدعت! مستواك صار يلمع اليوم 🌟" },
+  { emoji: "👑", title: "ملك التحدي", tier: "ذهبي", cheer: "يا كفو! لعبك احترافي يا ملك 👑" },
+  { emoji: "🏆", title: "كأس الإتقان", tier: "ألماسي", cheer: "أسطورة! وصلت مرحلة الإتقان 🏆" },
+];
 const ENGINE_COMPONENTS = {
   mcq: BubblePickGame,
   drag_drop_groups: DragDropGroupsGame,
@@ -112,7 +121,7 @@ function RunnerPage() {
   const [mistakeBadge, setMistakeBadge] = useState("");
   const [streakBanner, setStreakBanner] = useState("");
   const [earnedStickers, setEarnedStickers] = useState([]);
-  const [newStickerFx, setNewStickerFx] = useState("");
+  const [newStickerFx, setNewStickerFx] = useState(null);
 
   const [fxMessage, setFxMessage] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
@@ -127,12 +136,21 @@ function RunnerPage() {
   });
 
   const didFinishRef = useRef(false);
+  const awardedMilestonesRef = useRef(new Set());
 
   const current = questions[index] || null;
   const accuracyPercent = useMemo(() => {
     if (!attempts) return 0;
     return Math.max(0, Math.min(100, Math.round((correct / attempts) * 100)));
   }, [attempts, correct]);
+  const nextStickerTarget = useMemo(
+    () => STICKER_MILESTONES.find((value) => value > correct) || null,
+    [correct]
+  );
+  const toNextSticker = useMemo(() => {
+    if (!nextStickerTarget) return 0;
+    return Math.max(0, nextStickerTarget - correct);
+  }, [nextStickerTarget, correct]);
 
   const subtitle = useMemo(() => {
     if (isDailyChallenge) return "تحدي اليوم 🔥";
@@ -186,7 +204,8 @@ function RunnerPage() {
     setMistakeBadge("");
     setStreakBanner("");
     setEarnedStickers([]);
-    setNewStickerFx("");
+    setNewStickerFx(null);
+    awardedMilestonesRef.current = new Set();
     setMascotMood("🙂");
     setMascotText("ترى أؤمن فيك 😄");
     didFinishRef.current = false;
@@ -266,14 +285,36 @@ function RunnerPage() {
     window.setTimeout(() => setStreakBanner(""), 1400);
   }
 
-  function awardSticker() {
-    const sticker = SESSION_STICKERS[Math.floor(Math.random() * SESSION_STICKERS.length)];
+  function awardSticker(rewardIndex = 0) {
+    const sticker = SESSION_STICKERS[Math.max(0, rewardIndex) % SESSION_STICKERS.length];
     setEarnedStickers((prev) => {
       const next = [...prev, sticker];
-      return next.slice(-8);
+      return next.slice(-10);
     });
     setNewStickerFx(sticker);
-    window.setTimeout(() => setNewStickerFx(""), 900);
+    window.setTimeout(() => setNewStickerFx(null), 1600);
+    return sticker;
+  }
+
+  function maybeAwardMilestoneSticker(nextCorrect, nextStreak) {
+    const milestone = STICKER_MILESTONES.find((value) => value === nextCorrect);
+    if (!milestone || awardedMilestonesRef.current.has(milestone)) return null;
+    awardedMilestonesRef.current.add(milestone);
+    const sticker = awardSticker(awardedMilestonesRef.current.size - 1);
+    if (!sticker) return null;
+
+    if (nextStreak >= 3) {
+      triggerConfetti(1500);
+      triggerBalloons(2300);
+      playSound("applause", 0.85);
+    } else {
+      triggerConfetti(1000);
+      playSound("applause", 0.6);
+    }
+    showMessageTemporarily(sticker.cheer);
+    showStreakBanner(`ملصق جديد: ${sticker.emoji} ${sticker.title} (${sticker.tier})`);
+    setMascotText(sticker.cheer);
+    return sticker;
   }
 
   function triggerConfetti(duration = 1000) {
@@ -417,14 +458,13 @@ function RunnerPage() {
         if (nextStreak % 3 === 0) {
           triggerBalloons(2000);
           playSound("pop", 0.5);
-          awardSticker();
-          showMessageTemporarily("ملصق جديد! ⭐");
+          showStreakBanner("سلسلة نار! كمل يا وحش 🔥");
         }
-        if (nextCorrect % 5 === 0) {
+        const milestoneSticker = maybeAwardMilestoneSticker(nextCorrect, nextStreak);
+        if (!milestoneSticker && nextCorrect % 5 === 0) {
           triggerConfetti(1200);
           playSound("applause", 0.65);
           showMessageTemporarily(getSaudiMessage("level_up"));
-          awardSticker();
         }
       } else {
         setMascotMood("🤔");
@@ -523,22 +563,42 @@ function RunnerPage() {
               </div>
             </div>
             <div className="sticker-pouch">
-              <small>ملصقات الجلسة</small>
+              <small>ملصقات الأبطال</small>
+              <div className="sticker-next-meter">
+                {nextStickerTarget ? (
+                  <strong>باقي {toNextSticker} صح للملصق القادم</strong>
+                ) : (
+                  <strong>ختمت كل ملصقات الحصة! يا أسطورة 👑</strong>
+                )}
+              </div>
               <div className="sticker-row">
                 {earnedStickers.length ? (
                   earnedStickers.map((sticker, stickerIndex) => (
-                    <span key={`${stickerIndex}-${sticker}`} className="sticker-token">
-                      {sticker}
+                    <span key={`${stickerIndex}-${sticker.emoji}-${sticker.title}`} className="sticker-token">
+                      {sticker.emoji}
                     </span>
                   ))
                 ) : (
-                  <span className="sticker-empty">ابدأ الحل وخذ أول ملصق ✨</span>
+                  <span className="sticker-empty">أول ملصق يفتح عند 2 إجابات صحيحة ✨</span>
                 )}
               </div>
+              {earnedStickers.length ? (
+                <p className="sticker-last-title">
+                  آخر ملصق: {earnedStickers[earnedStickers.length - 1].emoji}{" "}
+                  {earnedStickers[earnedStickers.length - 1].title}
+                </p>
+              ) : null}
             </div>
           </div>
 
-          {newStickerFx ? <div className="new-sticker-fx">+{newStickerFx}</div> : null}
+          {newStickerFx ? (
+            <div className="new-sticker-fx">
+              <span className="sticker-fx-emoji">{newStickerFx.emoji}</span>
+              <span>ملصق جديد!</span>
+              <strong>{newStickerFx.title}</strong>
+              <small>{newStickerFx.tier}</small>
+            </div>
+          ) : null}
 
           <div className="question-stage" key={`question-${index}`}>
             <CurrentEngine
