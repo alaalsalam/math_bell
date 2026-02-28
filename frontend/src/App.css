@@ -159,6 +159,42 @@
   gap: 10px;
 }
 
+.choice-chip-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.choice-chip {
+  border: 2px solid #bfdbfe;
+  background: linear-gradient(145deg, #f8fbff, #eef6ff);
+  color: #0f172a;
+  border-radius: 14px;
+  min-height: 62px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.22s ease, border-color 0.2s ease;
+}
+
+.choice-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.18);
+}
+
+.choice-chip.active {
+  border-color: #0ea5e9;
+  background: linear-gradient(145deg, #e0f2fe, #dcfce7);
+  box-shadow: 0 10px 20px rgba(2, 132, 199, 0.2);
+}
+
+.choice-chip strong {
+  font-size: 1rem;
+}
+
 /* Login experience: large touch controls, bright but calm palette, and clear hierarchy. */
 .login-stage {
   position: relative;
@@ -1613,9 +1649,14 @@
   .primary-btn,
   .secondary-btn,
   .choice-btn,
+  .choice-chip,
   .hint-btn,
   .field {
     width: 100%;
+  }
+
+  .choice-chip-group {
+    grid-template-columns: 1fr;
   }
 
   .kid-progress-wrap {

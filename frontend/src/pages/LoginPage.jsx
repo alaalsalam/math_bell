@@ -20,6 +20,10 @@ function LoginPage() {
   const [helperText, setHelperText] = useState(getSaudiMessage("mascot"));
   const modeLabel = mode === "login" ? "رجوع الأبطال 🎯" : "بداية بطل جديد 🚀";
   const modeEmoji = mode === "login" ? "🧠" : "🌟";
+  const GRADE_OPTIONS = [
+    { key: "1", label: "الصف الأول", icon: "1️⃣" },
+    { key: "2", label: "الصف الثاني", icon: "2️⃣" },
+  ];
 
   useEffect(() => {
     const existing = getStoredStudent();
@@ -170,10 +174,23 @@ function LoginPage() {
 
             {mode === "register" ? (
               <>
-                <select className="field" value={grade} onChange={(e) => setGrade(e.target.value)}>
-                  <option value="1">الصف الأول</option>
-                  <option value="2">الصف الثاني</option>
-                </select>
+                <div className="choice-chip-group" role="group" aria-label="اختيار الصف">
+                  {GRADE_OPTIONS.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className={`choice-chip ${grade === item.key ? "active" : ""}`}
+                      onClick={() => {
+                        tapHaptic([10]);
+                        playSfx("pop", 0.32);
+                        setGrade(item.key);
+                      }}
+                    >
+                      <span>{item.icon}</span>
+                      <strong>{item.label}</strong>
+                    </button>
+                  ))}
+                </div>
                 <input
                   className="field"
                   value={joinCode}

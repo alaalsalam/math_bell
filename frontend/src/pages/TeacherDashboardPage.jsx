@@ -147,10 +147,24 @@ function TeacherDashboardPage() {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="اسم الفصل"
               />
-              <select className="field" value={grade} onChange={(e) => setGrade(e.target.value)}>
-                <option value="1">الصف الأول</option>
-                <option value="2">الصف الثاني</option>
-              </select>
+              <div className="choice-chip-group">
+                <button
+                  type="button"
+                  className={`choice-chip ${grade === "1" ? "active" : ""}`}
+                  onClick={() => setGrade("1")}
+                >
+                  <span>1️⃣</span>
+                  <strong>الصف الأول</strong>
+                </button>
+                <button
+                  type="button"
+                  className={`choice-chip ${grade === "2" ? "active" : ""}`}
+                  onClick={() => setGrade("2")}
+                >
+                  <span>2️⃣</span>
+                  <strong>الصف الثاني</strong>
+                </button>
+              </div>
               <button type="submit" className="primary-btn" disabled={creating}>
                 {creating ? "..." : "إنشاء فصل"}
               </button>
