@@ -1,30 +1,36 @@
 import { getBootstrap } from "../api/client";
+import { buildLocalBootstrap } from "./localBootstrap";
 
 const bootstrapPromises = new Map();
 const bootstrapDataMap = new Map();
 
 async function fetchBootstrapForStudent(studentId) {
-  if (!studentId) {
-    const res = await getBootstrap();
-    return res.data;
-  }
+  try {
+    if (!studentId) {
+      const res = await getBootstrap();
+      return res.data;
+    }
 
-  const body = new URLSearchParams();
-  body.append("student_id", String(studentId));
-  const response = await fetch("/api/method/math_bell.api.bootstrap.get_bootstrap", {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-    },
-    body,
-  });
-  const data = await response.json();
-  if (!response.ok || !data?.message || data.message.ok === false) {
-    const reason = data?.message?.message || data?.message?.error || response.statusText;
-    throw new Error(reason || "فشل تحميل بيانات البداية");
+    const body = new URLSearchParams();
+    body.append("student_id", String(studentId));
+    const response = await fetch("/api/method/math_bell.api.bootstrap.get_bootstrap", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+      },
+      body,
+    });
+    const data = await response.json();
+    if (!response.ok || !data?.message || data.message.ok === false) {
+      const reason = data?.message?.message || data?.message?.error || response.statusText;
+      throw new Error(reason || "فشل تحميل بيانات البداية");
+    }
+    return data.message.data;
+  } catch (error) {
+    console.warn("bootstrap fallback to local catalog", error);
+    return buildLocalBootstrap();
   }
-  return data.message.data;
 }
 
 export async function loadBootstrap({ force = false, studentId = null } = {}) {
