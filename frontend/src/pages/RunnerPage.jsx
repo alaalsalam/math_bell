@@ -89,6 +89,16 @@ function formatSeconds(totalSeconds) {
   return `${mm}:${ss}`;
 }
 
+function delay(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, Math.max(0, Number(ms) || 0)));
+}
+
+function readingDuration(text, baseMs = 1800) {
+  const content = String(text || "").trim();
+  const extra = Math.max(0, content.length - 16) * 42;
+  return Math.min(4600, Math.max(baseMs, baseMs + extra));
+}
+
 function RunnerPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -274,15 +284,15 @@ function RunnerPage() {
     };
   }, [mode, loading, sessionId]);
 
-  function showMessageTemporarily(text) {
+  function showMessageTemporarily(text, durationMs = 1800) {
     setFxMessage(text);
-    window.setTimeout(() => setFxMessage(""), 1200);
+    window.setTimeout(() => setFxMessage(""), readingDuration(text, durationMs));
   }
 
-  function showStreakBanner(text) {
+  function showStreakBanner(text, durationMs = 2000) {
     if (!text) return;
     setStreakBanner(text);
-    window.setTimeout(() => setStreakBanner(""), 1400);
+    window.setTimeout(() => setStreakBanner(""), readingDuration(text, durationMs));
   }
 
   function awardSticker(rewardIndex = 0) {
@@ -311,8 +321,8 @@ function RunnerPage() {
       triggerConfetti(1000);
       playSound("applause", 0.6);
     }
-    showMessageTemporarily(sticker.cheer);
-    showStreakBanner(`ملصق جديد: ${sticker.emoji} ${sticker.title} (${sticker.tier})`);
+    showMessageTemporarily(sticker.cheer, 2400);
+    showStreakBanner(`ملصق جديد: ${sticker.emoji} ${sticker.title} (${sticker.tier})`, 2600);
     setMascotText(sticker.cheer);
     return sticker;
   }
@@ -329,10 +339,10 @@ function RunnerPage() {
     window.setTimeout(() => setShowBalloons(false), duration);
   }
 
-  function showHintBubble(text) {
+  function showHintBubble(text, durationMs = 2600) {
     if (!text) return;
     setHintBubble(text);
-    window.setTimeout(() => setHintBubble(""), 1800);
+    window.setTimeout(() => setHintBubble(""), readingDuration(text, durationMs));
   }
 
   function useHintBeforeAnswer() {
@@ -435,9 +445,13 @@ function RunnerPage() {
       const backendHint = String(attemptRes?.data?.hint_text || "");
 
       setFeedback({ status: isCorrect ? "correct" : "wrong", value: pickedValue });
-      window.setTimeout(() => setFeedback({ status: "idle", value: null }), 700);
+      window.setTimeout(
+        () => setFeedback({ status: "idle", value: null }),
+        isCorrect ? 1300 : 2200
+      );
       setPendingHintCount(0);
       setMistakeBadge("");
+      let readingPauseMs = 0;
 
       if (isCorrect) {
         const nextStreak = streakCorrect + 1;
@@ -447,34 +461,43 @@ function RunnerPage() {
         playSound("correct", 0.85);
         if (nextStreak % 2 === 0) playSound("applause", 0.45);
         triggerConfetti(1000);
-        showMessageTemporarily(pickPhrase(correctPhrases, "كفو يا بطل! 👏"));
+        const correctText = pickPhrase(correctPhrases, "كفو يا بطل! 👏");
+        showMessageTemporarily(correctText, 1700);
+        readingPauseMs = Math.max(readingPauseMs, 1100);
         if (nextStreak >= 3) {
           const streakText = getSaudiMessage("streak");
-          showStreakBanner(streakText);
+          showStreakBanner(streakText, 2100);
           setMascotText(streakText);
+          readingPauseMs = Math.max(readingPauseMs, 1300);
         } else if (getStoredStudent()?.display_name) {
           setMascotText(personalizedProgress(getStoredStudent().display_name));
         }
         if (nextStreak % 3 === 0) {
           triggerBalloons(2000);
           playSound("pop", 0.5);
-          showStreakBanner("سلسلة نار! كمل يا وحش 🔥");
+          showStreakBanner("سلسلة نار! كمل يا وحش 🔥", 2300);
+          readingPauseMs = Math.max(readingPauseMs, 1400);
         }
         const milestoneSticker = maybeAwardMilestoneSticker(nextCorrect, nextStreak);
         if (!milestoneSticker && nextCorrect % 5 === 0) {
           triggerConfetti(1200);
           playSound("applause", 0.65);
-          showMessageTemporarily(getSaudiMessage("level_up"));
+          const levelText = getSaudiMessage("level_up");
+          showMessageTemporarily(levelText, 2200);
+          readingPauseMs = Math.max(readingPauseMs, 1400);
         }
       } else {
         setMascotMood("🤔");
         tapHaptic([45]);
         playSound("wrong", 0.7);
-        showMessageTemporarily(pickPhrase(wrongPhrases, "قريب مره… جرّب ثانية 😉"));
+        const wrongText = pickPhrase(wrongPhrases, "قريب مره… جرّب ثانية 😉");
+        showMessageTemporarily(wrongText, 2800);
         setMascotText("بس ركز معي شوي 👀");
         setStreakBanner("");
+        readingPauseMs = Math.max(readingPauseMs, 2300);
         if (backendHint) {
-          showHintBubble(backendHint);
+          showHintBubble(backendHint, 3200);
+          readingPauseMs = Math.max(readingPauseMs, 2800);
         }
         if (mistakeType === "off_by_one") {
           setMistakeBadge("قريب! 🎯");
@@ -493,9 +516,15 @@ function RunnerPage() {
 
       const nextIndex = index + 1;
       if (nextIndex >= questions.length) {
+        if (readingPauseMs > 0) await delay(Math.min(readingPauseMs, 2400));
         await finishSession();
         return;
       }
+
+      if (readingPauseMs > 0) {
+        await delay(readingPauseMs);
+      }
+      if (didFinishRef.current) return;
 
       setIndex(nextIndex);
       setQuestionStartTs(Date.now());
