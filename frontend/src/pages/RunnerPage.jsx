@@ -129,10 +129,10 @@ function RunnerPage() {
   const didFinishRef = useRef(false);
 
   const current = questions[index] || null;
-  const progressPercent = useMemo(() => {
-    if (!questions.length) return 0;
-    return Math.min(100, Math.round(((index + 1) / questions.length) * 100));
-  }, [index, questions.length]);
+  const accuracyPercent = useMemo(() => {
+    if (!attempts) return 0;
+    return Math.max(0, Math.min(100, Math.round((correct / attempts) * 100)));
+  }, [attempts, correct]);
 
   const subtitle = useMemo(() => {
     if (isDailyChallenge) return "تحدي اليوم 🔥";
@@ -328,6 +328,7 @@ function RunnerPage() {
             report: res?.data?.report || null,
             mode,
           },
+          replace: true,
         });
       })
       .catch((err) => {
@@ -355,6 +356,7 @@ function RunnerPage() {
             report: res?.data?.report || null,
             mode,
           },
+          replace: true,
         });
       }, 350);
     } catch (err) {
@@ -513,8 +515,11 @@ function RunnerPage() {
               سلسلة النجاح: {streakCorrect} 🔥
             </div>
             <div className="ring-wrap">
-              <div className="progress-ring runner-progress-ring" style={{ "--progress": `${progressPercent}%` }}>
-                <span>{progressPercent}%</span>
+              <div>
+                <div className="progress-ring runner-progress-ring" style={{ "--progress": `${accuracyPercent}%` }}>
+                  <span>{accuracyPercent}%</span>
+                </div>
+                <small className="hint-text">نسبة الدقة</small>
               </div>
             </div>
             <div className="sticker-pouch">
