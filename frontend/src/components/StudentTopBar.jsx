@@ -29,7 +29,7 @@ function StudentTopBar() {
           <span className="avatar">{student.avatar_emoji || "🙂"}</span>
           <span>{student.display_name}</span>
         </div>
-        <small className="aisha-mini-badge">مع الأستاذة عائشة</small>
+        <small className="aisha-mini-badge">تعلم والعب مع الاستاذة عائشه</small>
       </div>
       <div className="student-top-actions">
         <button type="button" className="secondary-btn top-icon-btn" onClick={goWorld} title="الرئيسية">

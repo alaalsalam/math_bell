@@ -106,6 +106,25 @@
   color: #475569;
 }
 
+.page-brand-slogan {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 7px 12px;
+  border: 1px solid #facc15;
+  background: linear-gradient(130deg, #fef3c7, #dcfce7);
+  color: #14532d;
+  font-weight: 900;
+  box-shadow: 0 8px 16px rgba(250, 204, 21, 0.15);
+}
+
+.page-brand-spark {
+  display: inline-block;
+  animation: sparkle-float 2.6s ease-in-out infinite;
+}
+
 .content {
   margin-top: 18px;
 }
@@ -1638,6 +1657,15 @@
 
   .subtitle {
     font-size: 0.95rem;
+  }
+
+  .page-brand-slogan {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    padding: 8px 10px;
   }
 
   .big-btn {
