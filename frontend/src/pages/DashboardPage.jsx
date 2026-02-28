@@ -103,6 +103,20 @@ function DashboardPage() {
             >
               ابدأ التحدي
             </button>
+            <button
+              className="big-btn"
+              type="button"
+              onClick={() =>
+                navigate(
+                  `/play?mode=practice&grade=${encodeURIComponent(student?.grade || "1")}` +
+                    `&domain=${encodeURIComponent(dailyChallenge?.suggested_domain || "Addition")}` +
+                    `&skill=${encodeURIComponent(dailyChallenge?.suggested_skill || "")}` +
+                    `&ui=${encodeURIComponent(dailyChallenge?.ui || "mcq")}`
+                )
+              }
+            >
+              ابدأ تلقائيًا الآن 🚀
+            </button>
           </section>
 
           <section className="teacher-block class-card">

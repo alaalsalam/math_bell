@@ -94,6 +94,16 @@ function WorldMapPage() {
     return activeRegion.skills || [];
   }, [activeRegion]);
 
+  function pickBestSkill(list) {
+    const rows = Array.isArray(list) ? list : [];
+    return (
+      rows.find((item) => item?.is_unlocked !== false && !item?.is_mastered) ||
+      rows.find((item) => item?.is_unlocked !== false) ||
+      rows[0] ||
+      null
+    );
+  }
+
   function startFromSkill(skill, mode, quick = false) {
     const grade = student?.grade || skill.grade || "1";
     const domain = skill.domain || "Addition";
@@ -115,6 +125,12 @@ function WorldMapPage() {
     navigate(query);
   }
 
+  function startAutoFromRegion(region, quick = false) {
+    const target = pickBestSkill(region?.skills || []);
+    if (!target) return;
+    startFromSkill(target, "practice", quick);
+  }
+
   return (
     <main className="world-screen">
       <PageShell title="عالم المغامرة" subtitle="اختر منطقة وابدأ اللعب">
@@ -129,9 +145,14 @@ function WorldMapPage() {
                 <h3>{region.title}</h3>
                 <p>مفتوح {region.opened} مهارة</p>
                 <p>مكتمل {region.mastered} 👑</p>
-                <button type="button" className="primary-btn" onClick={() => setActiveRegion(region)}>
-                  دخول
-                </button>
+                <div className="actions">
+                  <button type="button" className="big-btn" onClick={() => startAutoFromRegion(region)}>
+                    ابدأ تلقائيًا
+                  </button>
+                  <button type="button" className="primary-btn" onClick={() => setActiveRegion(region)}>
+                    اختر يدويًا
+                  </button>
+                </div>
               </article>
             ))}
           </section>
@@ -142,7 +163,12 @@ function WorldMapPage() {
             <section className="world-modal" onClick={(event) => event.stopPropagation()}>
               <div className="world-modal-head">
                 <h3>{activeRegion.icon} {activeRegion.title}</h3>
-                <button type="button" className="secondary-btn" onClick={() => setActiveRegion(null)}>إغلاق</button>
+                <div className="actions">
+                  <button type="button" className="big-btn" onClick={() => startAutoFromRegion(activeRegion)}>
+                    ابدأ المهمة الآن
+                  </button>
+                  <button type="button" className="secondary-btn" onClick={() => setActiveRegion(null)}>إغلاق</button>
+                </div>
               </div>
 
               <div className="skill-bubbles-grid">
@@ -173,20 +199,13 @@ function WorldMapPage() {
               <h3>{activeSkill.title_ar || activeSkill.code}</h3>
               <p className="subtitle">جاهز يا بطل؟</p>
               <div className="actions">
-                <button type="button" className="big-btn" onClick={() => startFromSkill(activeSkill, "practice")}>ابدأ تدريب</button>
+                <button type="button" className="big-btn" onClick={() => startFromSkill(activeSkill, "practice")}>ابدأ الآن</button>
                 <button
                   type="button"
                   className="secondary-btn"
                   onClick={() => startFromSkill(activeSkill, "practice", true)}
                 >
                   تحدي سريع (5 أسئلة)
-                </button>
-                <button
-                  type="button"
-                  className="big-btn"
-                  onClick={() => startFromSkill(activeSkill, "bell_session")}
-                >
-                  حصة الجرس 🔔
                 </button>
               </div>
             </section>

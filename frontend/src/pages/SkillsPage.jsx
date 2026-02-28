@@ -16,12 +16,12 @@ const GRADE_LABELS = {
   "2": "الصف الثاني",
 };
 
-const GAME_TYPES = [
-  { value: "mcq", label: "أسئلة سريعة" },
-  { value: "drag_drop_groups", label: "سحب وإفلات" },
-  { value: "vertical_column", label: "عمودي" },
-  { value: "fraction_builder", label: "الكسور" },
-];
+function uiFromGenerator(skill) {
+  const generator = String(skill?.generator_type || "");
+  if (generator === "vertical_add" || generator === "vertical_sub") return "vertical_column";
+  if (generator === "fraction_basic" || generator === "fraction_compare") return "fraction_builder";
+  return "mcq";
+}
 
 function SkillsPage() {
   const { grade, domain } = useParams();
@@ -30,12 +30,11 @@ function SkillsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [skills, setSkills] = useState([]);
-  const [selectedUi, setSelectedUi] = useState("mcq");
   const [settings, setSettings] = useState({
     default_bell_duration_seconds: 600,
     default_questions_per_session: 10,
-    show_only_skills_with_questions: 1,
-    enabled_game_engines: GAME_TYPES.map((item) => item.value),
+    show_only_skills_with_questions: 0,
+    enabled_game_engines: ["mcq", "drag_drop_groups", "vertical_column", "fraction_builder"],
   });
   const student = getStoredStudent();
 
@@ -59,8 +58,6 @@ function SkillsPage() {
           )
           .sort((a, b) => Number(a.skill_order || 0) - Number(b.skill_order || 0));
         setSkills(filtered);
-        const enabledEngines = mergedSettings.enabled_game_engines || [];
-        setSelectedUi((prev) => (enabledEngines.includes(prev) ? prev : enabledEngines[0] || "mcq"));
       })
       .catch((err) => {
         if (!alive) return;
@@ -81,18 +78,28 @@ function SkillsPage() {
     [grade, domain]
   );
 
-  function startPlay(skill, sessionType) {
-    const enabledEngines = settings.enabled_game_engines || [];
-    const effectiveUi = enabledEngines.includes(selectedUi) ? selectedUi : enabledEngines[0] || "mcq";
+  function startPlay(skillObj, sessionType, quick = false) {
+    const skillName = String(skillObj?.name || "");
+    const ui = uiFromGenerator(skillObj);
+    const questionCount = quick ? 5 : Number(settings.default_questions_per_session || 10);
     navigate(
       `/play?grade=${encodeURIComponent(grade)}&domain=${encodeURIComponent(domain)}&skill=${encodeURIComponent(
-        skill
-      )}&mode=${encodeURIComponent(sessionType)}&ui=${encodeURIComponent(effectiveUi)}` +
-        `&question_count=${encodeURIComponent(settings.default_questions_per_session || 10)}` +
+        skillName
+      )}&mode=${encodeURIComponent(sessionType)}&ui=${encodeURIComponent(ui)}` +
+        `&question_count=${encodeURIComponent(questionCount)}` +
         (sessionType === "bell_session"
           ? `&duration_seconds=${encodeURIComponent(settings.default_bell_duration_seconds || 600)}`
           : "")
     );
+  }
+
+  function startSmartTask() {
+    const target =
+      skills.find((row) => row?.is_unlocked !== false && !row?.is_mastered) ||
+      skills.find((row) => row?.is_unlocked !== false) ||
+      skills[0];
+    if (!target) return;
+    startPlay(target, "practice");
   }
 
   return (
@@ -101,39 +108,51 @@ function SkillsPage() {
       {error ? <p className="error-text">{error}</p> : null}
       {!loading && !error && skills.length === 0 ? <p>لا توجد مهارات متاحة حالياً.</p> : null}
 
-      <div className="game-type-picker">
-        <label htmlFor="game-type">نوع اللعبة</label>
-        <select
-          id="game-type"
-          className="field"
-          value={selectedUi}
-          onChange={(event) => setSelectedUi(event.target.value)}
-        >
-          {GAME_TYPES.filter((type) => (settings.enabled_game_engines || []).includes(type.value)).map((type) => (
-            <option key={type.value} value={type.value}>
-              {type.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!loading && !error && skills.length > 0 ? (
+        <section className="teacher-block class-card">
+          <h3>ابدأ تلقائيًا 🚀</h3>
+          <p>اختيار ذكي للمهارة ونوع السؤال بدون إعدادات</p>
+          <div className="actions">
+            <button type="button" className="big-btn" onClick={startSmartTask}>
+              ابدأ المهمة الآن
+            </button>
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={() => {
+                const target =
+                  skills.find((row) => row?.is_unlocked !== false && !row?.is_mastered) ||
+                  skills.find((row) => row?.is_unlocked !== false) ||
+                  skills[0];
+                if (!target) return;
+                startPlay(target, "practice", true);
+              }}
+            >
+              تحدي سريع (5 أسئلة)
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <div className="skill-grid">
         {skills.map((skill) => (
           <article key={skill.name} className="skill-card">
             <h3>{skill.title_ar || skill.code}</h3>
-            <p>أسئلة متاحة: {skill.question_count || 0}</p>
+            <p>{skill.is_mastered ? "مكتمل 👑" : skill.is_unlocked === false ? "مغلق 🔒" : "جاهز ✨"}</p>
             <div className="actions">
               <button
                 type="button"
                 className="primary-btn"
-                onClick={() => startPlay(skill.name, "practice")}
+                onClick={() => startPlay(skill, "practice")}
+                disabled={skill.is_unlocked === false}
               >
-                ابدأ تدريب
+                ابدأ الآن
               </button>
               <button
                 type="button"
                 className="secondary-btn"
-                onClick={() => startPlay(skill.name, "bell_session")}
+                onClick={() => startPlay(skill, "bell_session")}
+                disabled={skill.is_unlocked === false}
               >
                 ابدأ حصة الجرس
               </button>
