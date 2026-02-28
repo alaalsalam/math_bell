@@ -1,11 +1,27 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { tapHaptic } from "../kidfx/haptics";
 import { playSfx } from "../kidfx/sounds";
 import { clearStoredStudent, getStoredStudent } from "../utils/storage";
 
+const AISHA_TOPBAR_LINES = [
+  "مع الأستاذة عائشة ✨",
+  "أبطال الحساب مع الأستاذة عائشة 🚀",
+  "نلعب ونتعلم مع الأستاذة عائشة 🎯",
+  "جاهزين للمغامرة مع الأستاذة عائشة 🌟",
+];
+
 function StudentTopBar() {
   const navigate = useNavigate();
   const student = getStoredStudent();
+  const [lineIndex, setLineIndex] = useState(() => Math.floor(Math.random() * AISHA_TOPBAR_LINES.length));
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setLineIndex((prev) => (prev + 1) % AISHA_TOPBAR_LINES.length);
+    }, 3200);
+    return () => window.clearInterval(timer);
+  }, []);
 
   function goWorld() {
     tapHaptic([12]);
@@ -29,7 +45,9 @@ function StudentTopBar() {
           <span className="avatar">{student.avatar_emoji || "🙂"}</span>
           <span>{student.display_name}</span>
         </div>
-        <small className="aisha-mini-badge">تعلم والعب مع الاستاذة عائشه</small>
+        <small className="aisha-mini-badge" key={`aisha-line-${lineIndex}`}>
+          {AISHA_TOPBAR_LINES[lineIndex]}
+        </small>
       </div>
       <div className="student-top-actions">
         <button type="button" className="secondary-btn top-icon-btn" onClick={goWorld} title="الرئيسية">

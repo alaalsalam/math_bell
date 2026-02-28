@@ -1,7 +1,7 @@
 import { getStoredStudent } from "../utils/storage";
 import StudentTopBar from "./StudentTopBar";
 
-function PageShell({ title, subtitle, children, hideStudentHeader = false, showAishaBrand = true }) {
+function PageShell({ title, subtitle, children, hideStudentHeader = false, showAishaBrand = false }) {
   const student = getStoredStudent();
   const renderBrandSlogan = showAishaBrand && (hideStudentHeader || !student);
 

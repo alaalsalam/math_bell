@@ -93,7 +93,7 @@
   border: 1px solid #facc15;
   color: #14532d;
   font-weight: 800;
-  animation: badge-glow 2.2s ease-in-out infinite alternate;
+  animation: badge-glow 2.2s ease-in-out infinite alternate, aisha-line-in 0.3s ease;
 }
 
 .page-card h1 {
@@ -1539,6 +1539,30 @@
   background: #eff6ff;
 }
 
+.aisha-world-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid #fde047;
+  background: linear-gradient(120deg, #fefce8, #ecfeff);
+  color: #14532d;
+  font-weight: 800;
+  animation: aisha-line-in 0.35s ease;
+}
+
+.aisha-world-banner .spark {
+  font-size: 1.15rem;
+  animation: sparkle-float 2.4s ease-in-out infinite;
+}
+
+.aisha-world-banner p {
+  margin: 0;
+  line-height: 1.7;
+}
+
 /* Responsive hardening across phones, tablets, and laptops */
 @media (max-width: 1200px) {
   .page-card {
@@ -1769,6 +1793,11 @@
 @keyframes login-helper-in {
   0% { opacity: 0; transform: translateY(4px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes aisha-line-in {
+  0% { opacity: 0; transform: translateY(4px) scale(0.99); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes lift-in {

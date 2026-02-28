@@ -46,6 +46,14 @@ function WorldMapPage() {
   const [error, setError] = useState("");
   const [skills, setSkills] = useState([]);
   const [settings, setSettings] = useState({ default_bell_duration_seconds: 600 });
+  const [welcomeIndex, setWelcomeIndex] = useState(0);
+
+  const WELCOME_LINES = [
+    "هيا يا بطل… نبدأ خطوة ممتعة مع الأستاذة عائشة ✨",
+    "جاهز؟ اليوم بنحل وننبسط مع الأستاذة عائشة 🚀",
+    "اختيارك ممتاز! يلا نلعب ونتعلم سوا 🎯",
+    "تركيز بسيط… وبتطلع نجم اليوم 🌟",
+  ];
 
   useEffect(() => {
     let alive = true;
@@ -71,6 +79,13 @@ function WorldMapPage() {
       alive = false;
     };
   }, [student?.student_id]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setWelcomeIndex((prev) => (prev + 1) % WELCOME_LINES.length);
+    }, 3800);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const regions = useMemo(() => {
     return REGION_MAP.map((region) => {
@@ -113,6 +128,11 @@ function WorldMapPage() {
   return (
     <main className="world-screen">
       <PageShell title="عالم المغامرة" subtitle="اختر منطقة وابدأ اللعب">
+        <section className="aisha-world-banner" key={`world-welcome-${welcomeIndex}`}>
+          <span className="spark">✨</span>
+          <p>{WELCOME_LINES[welcomeIndex]}</p>
+        </section>
+
         {loading ? <p>...جاري التحميل</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
 
