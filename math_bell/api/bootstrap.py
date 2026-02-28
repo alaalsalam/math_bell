@@ -1,5 +1,7 @@
 import frappe
 from math_bell.utils.settings import get_mb_settings
+from math_bell.api.helpers import resolve_grade_link_name
+from math_bell.utils.runtime_bootstrap import ensure_runtime_catalog
 from math_bell.utils.skill_graph import evaluate_unlocks, filter_enabled_pack_skills
 
 
@@ -62,6 +64,15 @@ def _is_mastered(entry: dict, threshold: float) -> bool:
 @frappe.whitelist(allow_guest=True)
 def get_bootstrap(student_id: str | None = None):
     student_id = (student_id or "").strip() or None
+    target_grade_code = "1"
+    if student_id and frappe.db.exists("MB Student Profile", student_id):
+        student_grade = frappe.db.get_value("MB Student Profile", student_id, "grade")
+        try:
+            _, target_grade_code = resolve_grade_link_name(student_grade, auto_create=True)
+        except Exception:
+            target_grade_code = "1"
+    ensure_runtime_catalog(target_grade_code)
+
     settings = get_mb_settings()
     enabled_engines = settings.get("enabled_game_engines") or ["mcq"]
     student_level, student_skill_levels = _load_student_skill_state(student_id)

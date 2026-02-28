@@ -6,10 +6,29 @@ from frappe.utils import now_datetime
 from math_bell.api.helpers import resolve_grade_link_name
 from math_bell.api.planner import ensure_current_week_plan
 from math_bell.math_bell.doctype.mb_student_profile.mb_student_profile import AVATAR_EMOJIS
+from math_bell.utils.runtime_bootstrap import ensure_runtime_catalog
 
 
 def _random_avatar():
     return random.choice(AVATAR_EMOJIS)
+
+
+def _next_available_display_name(base_name: str) -> str:
+    """
+    Keep onboarding smooth for kids: if name exists, auto-suffix it.
+    Example: "علي" -> "علي 2", "علي 3", ...
+    """
+    clean = (base_name or "").strip()
+    if not clean:
+        return clean
+    if not frappe.db.exists("MB Student Profile", {"display_name": clean, "is_active": 1}):
+        return clean
+
+    for idx in range(2, 1000):
+        candidate = f"{clean} {idx}"
+        if not frappe.db.exists("MB Student Profile", {"display_name": candidate, "is_active": 1}):
+            return candidate
+    frappe.throw(_("تعذر إنشاء اسم فريد، يرجى اختيار اسم مختلف"))
 
 
 @frappe.whitelist(allow_guest=True)
@@ -34,6 +53,7 @@ def join_class(
     # Accept simple frontend grade codes and auto-heal missing base grade docs.
     # This keeps onboarding working even when seed patches were not executed yet.
     grade_name, grade_code = resolve_grade_link_name(grade, auto_create=True)
+    ensure_runtime_catalog(grade_code)
 
     class_group_name = None
     if join_code:
@@ -66,8 +86,13 @@ def join_class(
     if existing_name:
         student = frappe.get_doc("MB Student Profile", existing_name)
         if student.password_simple != password_simple:
-            frappe.throw(_("الاسم مستخدم بالفعل"))
+            # Do not block registration on name collision; auto-suffix instead.
+            display_name = _next_available_display_name(display_name)
+            student = None
     else:
+        student = None
+
+    if not student:
         student = frappe.get_doc(
             {
                 "doctype": "MB Student Profile",
@@ -120,6 +145,7 @@ def login_student(display_name: str, password_simple: str):
     ensure_current_week_plan(student.name)
 
     grade_name, grade_code = resolve_grade_link_name(student.grade, auto_create=True)
+    ensure_runtime_catalog(grade_code)
 
     return {
         "ok": True,
