@@ -18,12 +18,14 @@ import TeacherStudentPage from "../pages/TeacherStudentPage";
 import TeacherStudentsPage from "../pages/TeacherStudentsPage";
 import TeacherSettingsPage from "../pages/TeacherSettingsPage";
 import SplashAishaPage from "../pages/SplashAishaPage";
+import TeacherLoginPage from "../pages/TeacherLoginPage";
 
 function AppRouter() {
   return (
     <HashRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/teacher-login" element={<TeacherLoginPage />} />
 
         <Route
           path="/"

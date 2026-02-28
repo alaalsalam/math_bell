@@ -4,7 +4,6 @@ import PageShell from "../components/PageShell";
 import { getTimeGreeting, personalizedStart } from "../saudi/greetings";
 import { getStudentHomeInsights } from "../api/client";
 import { getStoredStudent } from "../utils/storage";
-import { enableTeacherMode, verifyTeacherPasscode } from "../utils/teacherMode";
 
 const GRADES = [
   { key: "1", label: "الصف الأول" },
@@ -38,19 +37,6 @@ function HomePage() {
     };
   }, [student?.student_id]);
 
-  function openTeacherMode() {
-    const input = window.prompt("أدخلي رمز وضع المعلمة");
-    if (!input) return;
-
-    if (!verifyTeacherPasscode(input)) {
-      window.alert("رمز غير صحيح");
-      return;
-    }
-
-    enableTeacherMode();
-    navigate("/teacher");
-  }
-
   const progressPercent = useMemo(() => {
     const attempts = Number(insight?.attempts_today || 0);
     const target = Math.max(Number(insight?.target_today || 10), 1);
@@ -60,7 +46,7 @@ function HomePage() {
   return (
     <PageShell title="جرس الرياضيات" subtitle={greeting}>
       <div className="teacher-mode-link-wrap">
-        <button type="button" className="teacher-link" onClick={openTeacherMode}>
+        <button type="button" className="teacher-link" onClick={() => navigate("/teacher-login")}>
           وضع المعلمة
         </button>
       </div>

@@ -83,9 +83,16 @@ function TeacherSettingsPage() {
           <p className="ok-text">تعمل هذه الإعدادات مباشرة داخل الواجهة بدون الحاجة لشاشات الخلفية.</p>
           <input
             className="field"
-            value={form.teacher_passcode || ""}
-            onChange={(e) => setField("teacher_passcode", e.target.value)}
-            placeholder="رمز وضع المعلمة (محلي)"
+            value={form.teacher_username || ""}
+            onChange={(e) => setField("teacher_username", e.target.value)}
+            placeholder="اسم مستخدم الأستاذة"
+          />
+          <input
+            className="field"
+            type="password"
+            value={form.teacher_password || ""}
+            onChange={(e) => setField("teacher_password", e.target.value)}
+            placeholder="كلمة مرور الأستاذة"
           />
           <input
             className="field"
