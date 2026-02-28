@@ -10,7 +10,7 @@ DEFAULT_SETTINGS = {
     "enable_confetti": 1,
     "enable_balloons": 1,
     "allow_guest_play": 0,
-    "show_only_skills_with_questions": 1,
+    "show_only_skills_with_questions": 0,
     "engines_json": ["mcq", "drag_drop_groups", "vertical_column", "fraction_builder"],
 }
 

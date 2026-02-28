@@ -19,6 +19,7 @@ from math_bell.api.helpers import (
 from math_bell.badges.rules import evaluate_and_award_badges
 from math_bell.generator import generate_questions
 from math_bell.hints import get_hint
+from math_bell.utils.runtime_bootstrap import ensure_runtime_catalog
 from math_bell.utils.skill_graph import evaluate_unlocks
 
 
@@ -119,6 +120,35 @@ def _get_question_candidates(
     if len(output) < limit:
         output.extend(fallback[: max(0, limit - len(output))])
     return output
+
+
+def _default_generator_for_domain(domain: str | None) -> str:
+    domain_key = (domain or "").strip()
+    mapping = {
+        "Addition": "addition_range",
+        "Subtraction": "subtraction_range",
+        "Fractions": "fraction_basic",
+    }
+    return mapping.get(domain_key, "addition_range")
+
+
+def _pick_runtime_skill(grade_name: str, domain: str) -> dict | None:
+    rows = frappe.get_all(
+        "MB Skill",
+        filters={
+            "grade": grade_name,
+            "domain": domain,
+            "is_active": 1,
+            "show_in_student_app": 1,
+        },
+        fields=["name", "grade", "generator_type", "difficulty_min", "difficulty_max", "adaptive_enabled", "order", "creation"],
+        order_by="creation asc",
+        limit_page_length=300,
+    )
+    if not rows:
+        return None
+    rows.sort(key=lambda row: (normalize_int(row.get("order"), 0), str(row.get("creation") or "")))
+    return rows[0]
 
 
 def _extract_answer_value(answer):
@@ -615,7 +645,23 @@ def start_session(
     # Resolve simple grade code from frontend and auto-create base grades when missing.
     # This reduces hard runtime dependency on manual Desk setup.
     grade_name, _grade_code = resolve_grade_link_name(grade, auto_create=True)
+    ensure_runtime_catalog(_grade_code)
     ensure_active_link("MB Domain", domain, "Domain")
+
+    skill_meta = None
+    if skill:
+        validate_skill_belongs_to_grade_domain(skill, grade_name, domain)
+        skill_meta = frappe.db.get_value(
+            "MB Skill",
+            skill,
+            ["name", "grade", "generator_type", "difficulty_min", "difficulty_max", "adaptive_enabled"],
+            as_dict=True,
+        )
+    else:
+        # Keep play flow smooth: pick first available skill automatically.
+        skill_meta = _pick_runtime_skill(grade_name, domain)
+        if skill_meta:
+            skill = skill_meta.get("name")
 
     if skill:
         validate_skill_belongs_to_grade_domain(skill, grade_name, domain)
@@ -649,15 +695,20 @@ def start_session(
     generated = False
     student_context = _get_student_context(student, skill) if skill else {}
     if skill:
-        skill_meta = frappe.db.get_value(
-            "MB Skill",
-            skill,
-            ["name", "grade", "generator_type", "difficulty_min", "difficulty_max", "adaptive_enabled"],
-            as_dict=True,
-        )
+        if not skill_meta:
+            skill_meta = frappe.db.get_value(
+                "MB Skill",
+                skill,
+                ["name", "grade", "generator_type", "difficulty_min", "difficulty_max", "adaptive_enabled"],
+                as_dict=True,
+            )
         adaptive_enabled = normalize_bool((skill_meta or {}).get("adaptive_enabled"))
-        generator_type = ((skill_meta or {}).get("generator_type") or "static").strip()
-        if adaptive_enabled and generator_type and generator_type != "static":
+        generator_type = ((skill_meta or {}).get("generator_type") or "").strip()
+        if not generator_type or generator_type == "static":
+            generator_type = _default_generator_for_domain(domain)
+
+        # Procedural generation is the primary path, independent of question bank.
+        if generator_type and generator_type != "static":
             questions = generate_questions(
                 {
                     "name": skill_meta.get("name"),
@@ -670,7 +721,7 @@ def start_session(
                 count=question_count,
                 session_seed=doc.name,
             )
-            generated = True
+            generated = bool(questions)
 
     if not questions:
         recent_signatures = set(student_context.get("recent_signatures") or [])

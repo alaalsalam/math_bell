@@ -36,6 +36,10 @@ def _parse_json_dict(value):
         return {}
 
 
+def _domain_has_runtime_generator(domain: str | None) -> bool:
+    return (domain or "").strip() in {"Addition", "Subtraction", "Fractions"}
+
+
 def _load_student_skill_state(student_id: str | None) -> tuple[int, dict]:
     if not student_id or not frappe.db.exists("MB Student Profile", student_id):
         return 0, {}
@@ -159,8 +163,10 @@ def get_bootstrap(student_id: str | None = None):
             skill_name = row.get("name")
             skill_code = row.get("code")
             question_count = question_count_map.get(skill_name, 0)
-            has_generated_content = _as_bool(row.get("adaptive_enabled")) and (
-                (row.get("generator_type") or "static") != "static"
+            generator_type = (row.get("generator_type") or "").strip()
+            has_generated_content = (
+                (_as_bool(row.get("adaptive_enabled")) and generator_type and generator_type != "static")
+                or _domain_has_runtime_generator(row.get("domain"))
             )
             # If question bank is empty on this site, do not hide all skills.
             if (
