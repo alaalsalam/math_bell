@@ -1,20 +1,21 @@
 .page-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: clamp(10px, 2.2vw, 24px);
 }
 
 .page-card {
-  width: min(980px, 100%);
+  width: min(1120px, 100%);
   border-radius: 30px;
   background: #ffffff;
   border: 1px solid #dbe3ef;
   box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
-  padding: 32px;
+  padding: clamp(14px, 2.6vw, 32px);
   animation: card-in 0.35s ease;
   position: relative;
   z-index: 1;
+  overflow: hidden;
 }
 
 .student-topbar {
@@ -320,6 +321,7 @@
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 1rem;
+  min-height: 48px;
 }
 
 .skill-grid {
@@ -359,7 +361,8 @@
 .choice-btn {
   border: none;
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 12px 14px;
+  min-height: 46px;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.14s ease, box-shadow 0.2s ease;
@@ -651,6 +654,7 @@
 
 .teacher-block {
   margin-top: 14px;
+  min-width: 0;
 }
 
 .create-class-form {
@@ -1422,6 +1426,7 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .world-modal-head h3 {
@@ -1477,6 +1482,168 @@
   place-items: center;
   font-size: 1.8rem;
   background: #eff6ff;
+}
+
+/* Responsive hardening across phones, tablets, and laptops */
+@media (max-width: 1200px) {
+  .page-card {
+    width: min(1020px, 100%);
+  }
+}
+
+@media (max-width: 1024px) {
+  .page-shell {
+    padding: 12px;
+  }
+
+  .page-card {
+    border-radius: 24px;
+  }
+
+  .create-class-form,
+  .filters-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .world-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .world-modal {
+    width: min(92vw, 860px);
+  }
+}
+
+@media (max-width: 860px) {
+  .runner-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .runner-progress-ring {
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-card {
+    border-radius: 20px;
+    padding: 14px;
+  }
+
+  .student-topbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .student-top-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .grid-buttons,
+  .skill-grid,
+  .class-grid,
+  .choices-grid,
+  .teacher-stats,
+  .world-grid,
+  .skill-bubbles-grid,
+  .report-progress-grid,
+  .engine-toggles {
+    grid-template-columns: 1fr;
+  }
+
+  .create-class-form,
+  .filters-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tiny-bar-row {
+    grid-template-columns: 64px 1fr auto;
+  }
+
+  .sessions-table th,
+  .sessions-table td {
+    padding: 6px;
+    font-size: 0.88rem;
+  }
+
+  .actions-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .teacher-nav-links {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .world-modal {
+    width: 100%;
+    max-height: 86dvh;
+    border-radius: 18px;
+    padding: 12px;
+  }
+
+  .world-modal-backdrop {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 560px) {
+  .page-shell {
+    padding: 8px;
+  }
+
+  .page-card h1 {
+    font-size: 1.8rem;
+    line-height: 1.25;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+  }
+
+  .big-btn {
+    min-height: 60px;
+    padding: 14px;
+    font-size: 1.05rem;
+  }
+
+  .primary-btn,
+  .secondary-btn,
+  .choice-btn,
+  .hint-btn,
+  .field {
+    width: 100%;
+  }
+
+  .kid-progress-wrap {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .runner-meta {
+    gap: 6px;
+  }
+
+  .streak-chip,
+  .sticker-pouch,
+  .report-hero-banner,
+  .class-card,
+  .runner-card,
+  .report-card {
+    border-radius: 14px;
+  }
+
+  .world-region-card {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .world-region-card h3 {
+    font-size: 1.05rem;
+  }
 }
 
 @media (max-width: 720px) {

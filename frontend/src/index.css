@@ -19,6 +19,19 @@ body,
   margin: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+img,
+svg,
+canvas,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
 body {
   font-family: "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
   background:
