@@ -3,6 +3,7 @@ import StudentTopBar from "./StudentTopBar";
 
 function PageShell({ title, subtitle, children, hideStudentHeader = false, showAishaBrand = true }) {
   const student = getStoredStudent();
+  const renderBrandSlogan = showAishaBrand && (hideStudentHeader || !student);
 
   return (
     <main className="page-shell">
@@ -11,7 +12,7 @@ function PageShell({ title, subtitle, children, hideStudentHeader = false, showA
 
         <h1>{title}</h1>
         {subtitle ? <p className="subtitle">{subtitle}</p> : null}
-        {showAishaBrand ? (
+        {renderBrandSlogan ? (
           <div className="page-brand-slogan" aria-label="Aisha brand slogan">
             <span className="page-brand-spark">✨</span>
             <strong>تعلم والعب مع الاستاذة عائشه</strong>

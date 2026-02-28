@@ -85,9 +85,10 @@ def get_bootstrap(student_id: str | None = None):
     # Important: keep the unlock set returned by evaluate_unlocks.
     # Resetting it here hides all skills for new students.
     # visible_skill_names = set()
+    lock_visible_skill_names = set()
     if use_locking:
         unlock_state = evaluate_unlocks(student_id=student_id, persist=False)
-        visible_skill_names = set(unlock_state.get("visible_skill_names") or [])
+        lock_visible_skill_names = set(unlock_state.get("visible_skill_names") or [])
 
     grades = frappe.get_all(
         "MB Grade",
@@ -187,7 +188,7 @@ def get_bootstrap(student_id: str | None = None):
 
             if use_locking:
                 # Locking mode depends on precomputed visibility from skill graph.
-                unlocked = skill_name in visible_skill_names
+                unlocked = skill_name in lock_visible_skill_names
             else:
                 unlocked = True
 

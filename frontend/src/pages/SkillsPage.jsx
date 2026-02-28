@@ -78,10 +78,10 @@ function SkillsPage() {
     [grade, domain]
   );
 
-  function startPlay(skillObj, sessionType, quick = false) {
+  function startPlay(skillObj, sessionType) {
     const skillName = String(skillObj?.name || "");
     const ui = uiFromGenerator(skillObj);
-    const questionCount = quick ? 5 : Number(settings.default_questions_per_session || 10);
+    const questionCount = Number(settings.default_questions_per_session || 10);
     navigate(
       `/play?grade=${encodeURIComponent(grade)}&domain=${encodeURIComponent(domain)}&skill=${encodeURIComponent(
         skillName
@@ -110,25 +110,11 @@ function SkillsPage() {
 
       {!loading && !error && skills.length > 0 ? (
         <section className="teacher-block class-card">
-          <h3>ابدأ تلقائيًا 🚀</h3>
-          <p>اختيار ذكي للمهارة ونوع السؤال بدون إعدادات</p>
+          <h3>ابدأ الآن 🚀</h3>
+          <p>بنختار لك أفضل مهارة تلقائيًا</p>
           <div className="actions">
             <button type="button" className="big-btn" onClick={startSmartTask}>
               ابدأ المهمة الآن
-            </button>
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={() => {
-                const target =
-                  skills.find((row) => row?.is_unlocked !== false && !row?.is_mastered) ||
-                  skills.find((row) => row?.is_unlocked !== false) ||
-                  skills[0];
-                if (!target) return;
-                startPlay(target, "practice", true);
-              }}
-            >
-              تحدي سريع (5 أسئلة)
             </button>
           </div>
         </section>
@@ -147,14 +133,6 @@ function SkillsPage() {
                 disabled={skill.is_unlocked === false}
               >
                 ابدأ الآن
-              </button>
-              <button
-                type="button"
-                className="secondary-btn"
-                onClick={() => startPlay(skill, "bell_session")}
-                disabled={skill.is_unlocked === false}
-              >
-                ابدأ حصة الجرس
               </button>
             </div>
           </article>

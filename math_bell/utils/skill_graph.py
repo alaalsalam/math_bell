@@ -163,6 +163,28 @@ def evaluate_unlocks(
                 entry["unlocked"] = 1
                 skill_levels[skill_code] = entry
 
+    # Safety fallback for new accounts:
+    # if graph rules lead to zero unlocked skills, unlock the first visible skill per (grade, domain).
+    if not unlocked_codes:
+        first_per_track: dict[tuple[str, str], dict] = {}
+        for row in skills:
+            pack_name = row.get("pack")
+            if not _is_pack_enabled_for_runtime(pack_name, pack_enabled):
+                continue
+            track_key = (str(row.get("grade") or ""), str(row.get("domain") or ""))
+            if track_key not in first_per_track:
+                first_per_track[track_key] = row
+
+        for row in first_per_track.values():
+            skill_name = row.get("name")
+            skill_code = row.get("code") or skill_name
+            unlocked_codes.add(skill_code)
+            visible_skill_names.add(skill_name)
+            entry = skill_levels.get(skill_code) or skill_levels.get(skill_name) or {}
+            if isinstance(entry, dict):
+                entry["unlocked"] = 1
+                skill_levels[skill_code] = entry
+
     if persist:
         student.skill_levels_json = to_json_string(skill_levels)
         student.save(ignore_permissions=True)
