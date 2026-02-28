@@ -12,6 +12,7 @@ import {
 import { getTimeGreeting } from "../saudi/greetings";
 import { getChallengeMessage } from "../saudi/challenge_messages";
 import { getDailyTip } from "../saudi/tips";
+import { getDashboardMessage } from "../saudi/dashboard_messages";
 import { getStoredStudent } from "../utils/storage";
 
 function DashboardPage() {
@@ -25,6 +26,8 @@ function DashboardPage() {
   const [weeklyProgress, setWeeklyProgress] = useState(null);
   const [weeklyPlan, setWeeklyPlan] = useState(null);
   const [focusToday, setFocusToday] = useState([]);
+  const [heroMessage, setHeroMessage] = useState(() => getDashboardMessage("hero"));
+  const [coachPulse, setCoachPulse] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -34,7 +37,7 @@ function DashboardPage() {
       return undefined;
     }
 
-    Promise.all([
+    Promise.allSettled([
       getStudentHomeInsights({ student_id: student.student_id }),
       getDailyChallenge({ student_id: student.student_id }),
       getWeeklyLeaderboard({ grade: student.grade || undefined }),
@@ -42,18 +45,43 @@ function DashboardPage() {
       getCurrentPlan({ student_id: student.student_id }),
       getStudentForecast({ student_id: student.student_id }),
     ])
-      .then(([homeRes, challengeRes, leaderboardRes, weeklyRes, planRes, forecastRes]) => {
+      .then((results) => {
         if (!alive) return;
-        setInsight(homeRes?.data || null);
-        setDailyChallenge(challengeRes?.data || null);
-        setWeeklyTop((leaderboardRes?.data?.leaderboard || []).slice(0, 5));
-        setWeeklyProgress(weeklyRes?.data || null);
-        setWeeklyPlan(planRes?.data || null);
-        setFocusToday((forecastRes?.data?.focus_today || []).slice(0, 2));
-      })
-      .catch((err) => {
-        if (!alive) return;
-        setError(err.message || "فشل تحميل لوحة الطالب");
+
+        const readData = (idx, fallback = null) => {
+          const node = results[idx];
+          if (!node || node.status !== "fulfilled") return fallback;
+          return node.value?.data ?? fallback;
+        };
+
+        const homeData = readData(0, {
+          level: 1,
+          stars_total: 0,
+          streak: 0,
+          recommended_next_skill: "ابدأ من عالم المغامرة",
+          skills_mastery: [],
+        });
+        const challengeData = readData(1, {
+          suggested_domain: "Addition",
+          suggested_skill: "G1_ADD_001",
+          ui: "mcq",
+        });
+        const leaderboardData = readData(2, { leaderboard: [] });
+        const weeklyData = readData(3, { attempts_this_week: 0, goal_weekly: 50, achieved: false });
+        const planData = readData(4, { completion_rate: 0, days_completed: 0, plan: {} });
+        const forecastData = readData(5, { focus_today: [] });
+
+        setInsight(homeData);
+        setDailyChallenge(challengeData);
+        setWeeklyTop((leaderboardData?.leaderboard || []).slice(0, 5));
+        setWeeklyProgress(weeklyData);
+        setWeeklyPlan(planData);
+        setFocusToday((forecastData?.focus_today || []).slice(0, 2));
+
+        const firstError = results.find((item) => item.status === "rejected");
+        if (firstError) {
+          setError("تم تحميل اللوحة مع وضع التوافق السريع لبعض البيانات");
+        }
       })
       .finally(() => {
         if (!alive) return;
@@ -69,18 +97,50 @@ function DashboardPage() {
   const greeting = useMemo(() => getTimeGreeting(), []);
   const challengeStartMessage = useMemo(() => getChallengeMessage("challenge_start"), []);
   const leaderboardMessage = useMemo(() => getChallengeMessage("leaderboard_rank"), []);
+  const pulseMessage = useMemo(() => getDashboardMessage("pulse"), [insight?.streak, insight?.level, insight?.stars_total]);
+  const streakMessage = useMemo(
+    () => (Number(insight?.streak || 0) >= 3 ? getDashboardMessage("streak") : getDashboardMessage("recovery")),
+    [insight?.streak]
+  );
   const myRank = useMemo(
     () => (weeklyTop || []).findIndex((row) => String(row.name) === String(student?.student_id)),
     [weeklyTop, student?.student_id]
   );
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroMessage(getDashboardMessage("hero"));
+    }, 4200);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    setCoachPulse(true);
+    const timer = window.setTimeout(() => setCoachPulse(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [insight?.streak, insight?.level, insight?.stars_total]);
+
   return (
     <PageShell title="لوحتي" subtitle={greeting}>
       {loading ? <p>...جاري التحميل</p> : null}
-      {error ? <p className="error-text">{error}</p> : null}
+      {error ? <p className="ok-text">{error}</p> : null}
 
       {!loading && insight ? (
         <>
+          <section className={`dashboard-hero class-card ${coachPulse ? "is-pulse" : ""}`}>
+            <p className="dashboard-hero-kicker">تعلم والعب مع الأستاذة عائشة</p>
+            <h2>{student?.display_name ? `يا هلا ${student.display_name} 👋` : "يا هلا بطل 👋"}</h2>
+            <p className="dashboard-hero-line" key={heroMessage}>
+              {heroMessage}
+            </p>
+            <div className="dashboard-stats-row">
+              <span>المستوى {insight.level || 1}</span>
+              <span>{insight.stars_total || 0} ⭐</span>
+              <span>{insight.streak || 0} 🔥</span>
+            </div>
+            <p className="dashboard-coach-note">{pulseMessage}</p>
+          </section>
+
           <section className="teacher-block class-card">
             <h3>تحدي اليوم 🔥</h3>
             <p>
@@ -124,6 +184,7 @@ function DashboardPage() {
             <p>المستوى الحالي: {insight.level || 1}</p>
             <p>النجوم: {insight.stars_total || 0} ⭐</p>
             <p>السلسلة: {insight.streak || 0} 🔥</p>
+            <p className="dashboard-mini-motivation">{streakMessage}</p>
           </section>
 
           <section className="teacher-block class-card">
