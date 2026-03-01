@@ -15,7 +15,7 @@ function PageShell({ title, subtitle, children, hideStudentHeader = false, showA
         {renderBrandSlogan ? (
           <div className="page-brand-slogan" aria-label="Aisha brand slogan">
             <span className="page-brand-spark">✨</span>
-            <strong>تعلم والعب مع الاستاذة عائشه</strong>
+            <strong>تعلم والعب مع الأستاذة عائشة الحارثي</strong>
           </div>
         ) : null}
         <div className="content">{children}</div>

@@ -32,6 +32,7 @@ def _pick_daily_target(student_id: str) -> dict:
             "MB Skill",
             filters={"grade": grade, "is_active": 1, "show_in_student_app": 1},
             fields=["domain", "order", "creation"],
+            order_by="creation asc",
             limit_page_length=200,
         )
         first_row.sort(
@@ -47,6 +48,7 @@ def _pick_daily_target(student_id: str) -> dict:
             "MB Skill",
             filters={"grade": grade, "domain": domain, "is_active": 1, "show_in_student_app": 1},
             fields=["name", "order", "creation"],
+            order_by="creation asc",
             limit_page_length=200,
         )
         skill_rows.sort(

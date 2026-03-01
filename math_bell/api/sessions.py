@@ -582,7 +582,7 @@ def _award_xp_on_end_session(student_name: str, correct: int, unlocked_next: boo
     student = frappe.get_doc("MB Student Profile", student_name)
 
     xp_delta = max(normalize_int(correct, 0), 0) * 5
-    xp_delta += 10  # session completion bonus
+    # No fixed completion bonus: wrong answers should not artificially increase level.
     mastery_bonus_applied = bool(unlocked_next or mastery_reached)
     if mastery_bonus_applied:
         xp_delta += 50

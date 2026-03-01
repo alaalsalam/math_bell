@@ -14,6 +14,19 @@ import { getChallengeMessage } from "../saudi/challenge_messages";
 import { getDailyTip } from "../saudi/tips";
 import { getDashboardMessage } from "../saudi/dashboard_messages";
 import { getStoredStudent } from "../utils/storage";
+import { loadBootstrap } from "../utils/bootstrapCache";
+
+const DOMAIN_AR = {
+  Addition: "الجمع",
+  Subtraction: "الطرح",
+  Fractions: "الكسور",
+};
+
+function normalizeSkillLabel(value, map) {
+  const key = String(value || "").trim();
+  if (!key) return "مهارة متاحة";
+  return map.get(key) || key;
+}
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -26,6 +39,7 @@ function DashboardPage() {
   const [weeklyProgress, setWeeklyProgress] = useState(null);
   const [weeklyPlan, setWeeklyPlan] = useState(null);
   const [focusToday, setFocusToday] = useState([]);
+  const [skillTitleMap, setSkillTitleMap] = useState(() => new Map());
   const [heroMessage, setHeroMessage] = useState(() => getDashboardMessage("hero"));
   const [coachPulse, setCoachPulse] = useState(false);
 
@@ -38,6 +52,7 @@ function DashboardPage() {
     }
 
     Promise.allSettled([
+      loadBootstrap({ studentId: student.student_id }),
       getStudentHomeInsights({ student_id: student.student_id }),
       getDailyChallenge({ student_id: student.student_id }),
       getWeeklyLeaderboard({ grade: student.grade || undefined }),
@@ -54,22 +69,32 @@ function DashboardPage() {
           return node.value?.data ?? fallback;
         };
 
-        const homeData = readData(0, {
+        const bootstrapData = readData(0, { skills: [] });
+        const map = new Map();
+        (bootstrapData?.skills || []).forEach((item) => {
+          const label = item?.title_ar || item?.code || item?.name;
+          if (!label) return;
+          if (item?.name) map.set(String(item.name), label);
+          if (item?.code) map.set(String(item.code), label);
+        });
+        setSkillTitleMap(map);
+
+        const homeData = readData(1, {
           level: 1,
           stars_total: 0,
           streak: 0,
           recommended_next_skill: "ابدأ من عالم المغامرة",
           skills_mastery: [],
         });
-        const challengeData = readData(1, {
+        const challengeData = readData(2, {
           suggested_domain: "Addition",
           suggested_skill: "G1_ADD_001",
           ui: "mcq",
         });
-        const leaderboardData = readData(2, { leaderboard: [] });
-        const weeklyData = readData(3, { attempts_this_week: 0, goal_weekly: 50, achieved: false });
-        const planData = readData(4, { completion_rate: 0, days_completed: 0, plan: {} });
-        const forecastData = readData(5, { focus_today: [] });
+        const leaderboardData = readData(3, { leaderboard: [] });
+        const weeklyData = readData(4, { attempts_this_week: 0, goal_weekly: 50, achieved: false });
+        const planData = readData(5, { completion_rate: 0, days_completed: 0, plan: {} });
+        const forecastData = readData(6, { focus_today: [] });
 
         setInsight(homeData);
         setDailyChallenge(challengeData);
@@ -128,7 +153,7 @@ function DashboardPage() {
       {!loading && insight ? (
         <>
           <section className={`dashboard-hero class-card ${coachPulse ? "is-pulse" : ""}`}>
-            <p className="dashboard-hero-kicker">تعلم والعب مع الأستاذة عائشة</p>
+            <p className="dashboard-hero-kicker">تعلم والعب مع الأستاذة عائشة الحارثي</p>
             <h2>{student?.display_name ? `يا هلا ${student.display_name} 👋` : "يا هلا بطل 👋"}</h2>
             <p className="dashboard-hero-line" key={heroMessage}>
               {heroMessage}
@@ -144,10 +169,10 @@ function DashboardPage() {
           <section className="teacher-block class-card">
             <h3>تحدي اليوم 🔥</h3>
             <p>
-              المجال المقترح: <strong>{dailyChallenge?.suggested_domain || "-"}</strong>
+              المجال المقترح: <strong>{DOMAIN_AR[dailyChallenge?.suggested_domain] || dailyChallenge?.suggested_domain || "-"}</strong>
             </p>
             <p>
-              المهارة: <strong>{dailyChallenge?.suggested_skill || "أي مهارة متاحة"}</strong>
+              المهارة: <strong>{normalizeSkillLabel(dailyChallenge?.suggested_skill, skillTitleMap)}</strong>
             </p>
             <p className="ok-text">{challengeStartMessage}</p>
             <button
@@ -190,7 +215,7 @@ function DashboardPage() {
           <section className="teacher-block class-card">
             <h3>نصيحة اليوم</h3>
             <p>{tip}</p>
-            <p>اقتراح اليوم: {insight.recommended_next_skill || "ابدأ بأي مهارة"}</p>
+            <p>اقتراح اليوم: {normalizeSkillLabel(insight.recommended_next_skill || "ابدأ بأي مهارة", skillTitleMap)}</p>
           </section>
 
           <section className="teacher-block class-card">
@@ -199,7 +224,7 @@ function DashboardPage() {
             <div className="class-grid">
               {(focusToday || []).map((item) => (
                 <article className="class-card" key={item.skill_code || item.skill}>
-                  <h4>{item.title_ar || item.skill_code || item.skill}</h4>
+                  <h4>{item.title_ar || normalizeSkillLabel(item.skill_code || item.skill, skillTitleMap)}</h4>
                   <p>مستوى الخطر: {item.risk === "high" ? "عالٍ" : item.risk === "medium" ? "متوسط" : "منخفض"}</p>
                   <p>إتقان متوقع: {Math.round(Number(item.p_mastery || 0) * 100)}%</p>
                   <div className="actions">

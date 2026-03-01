@@ -132,6 +132,7 @@ function RunnerPage() {
   const [streakBanner, setStreakBanner] = useState("");
   const [earnedStickers, setEarnedStickers] = useState([]);
   const [newStickerFx, setNewStickerFx] = useState(null);
+  const [wrongRetryByQuestion, setWrongRetryByQuestion] = useState({});
 
   const [fxMessage, setFxMessage] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
@@ -215,6 +216,7 @@ function RunnerPage() {
     setStreakBanner("");
     setEarnedStickers([]);
     setNewStickerFx(null);
+    setWrongRetryByQuestion({});
     awardedMilestonesRef.current = new Set();
     setMascotMood("🙂");
     setMascotText("ترى أؤمن فيك 😄");
@@ -510,8 +512,24 @@ function RunnerPage() {
       if (isCorrect) {
         setCorrect((prev) => prev + 1);
         setStreakCorrect((prev) => prev + 1);
+        if (current?.question_ref) {
+          setWrongRetryByQuestion((prev) => {
+            if (!prev[current.question_ref]) return prev;
+            const next = { ...prev };
+            delete next[current.question_ref];
+            return next;
+          });
+        }
       } else {
         setStreakCorrect(0);
+        const currentRef = current?.question_ref;
+        const retries = currentRef ? Number(wrongRetryByQuestion[currentRef] || 0) : 0;
+        if (currentRef && retries < 1) {
+          setWrongRetryByQuestion((prev) => ({ ...prev, [currentRef]: retries + 1 }));
+          showHintBubble("يلا نجرب نفس السؤال مرة ثانية بهدوء 💪", 2800);
+          setQuestionStartTs(Date.now());
+          return;
+        }
       }
 
       const nextIndex = index + 1;
@@ -549,6 +567,16 @@ function RunnerPage() {
 
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
+      {!loading && error ? (
+        <div className="actions-inline">
+          <button type="button" className="primary-btn" onClick={() => navigate("/world", { replace: true })}>
+            العودة لعالم المغامرة
+          </button>
+          <button type="button" className="secondary-btn" onClick={() => navigate("/dashboard", { replace: true })}>
+            الذهاب إلى لوحة الإنجازات
+          </button>
+        </div>
+      ) : null}
 
       {mode === "bell_session" && remainingSeconds !== null ? (
         <p className="timer-badge">

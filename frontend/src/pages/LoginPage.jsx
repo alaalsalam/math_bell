@@ -105,7 +105,7 @@ function LoginPage() {
   return (
     <PageShell
       title="دخول الأطفال"
-      subtitle="إعداد وتقديم: الأستاذة عائشة"
+      subtitle="دخول سهل وممتع"
       hideStudentHeader
     >
       <section className="login-stage">
@@ -126,7 +126,7 @@ function LoginPage() {
             <strong>{modeLabel}</strong>
           </div>
           <p className="login-helper-live" key={`${mode}-${helperText}`}>{helperText}</p>
-          <p className="aisha-signature">إعداد وتقديم: الأستاذة عائشة</p>
+          <p className="aisha-signature">إعداد وتقديم: الأستاذة عائشة الحارثي</p>
         </article>
 
         <article className="login-form-card">

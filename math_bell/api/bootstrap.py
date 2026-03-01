@@ -87,8 +87,14 @@ def get_bootstrap(student_id: str | None = None):
     # visible_skill_names = set()
     lock_visible_skill_names = set()
     if use_locking:
-        unlock_state = evaluate_unlocks(student_id=student_id, persist=False)
-        lock_visible_skill_names = set(unlock_state.get("visible_skill_names") or [])
+        try:
+            unlock_state = evaluate_unlocks(student_id=student_id, persist=False)
+            lock_visible_skill_names = set(unlock_state.get("visible_skill_names") or [])
+        except Exception:
+            # Fail-open for student UX: never hide all skills بسبب خطأ داخلي.
+            unlock_state = {}
+            lock_visible_skill_names = set()
+            use_locking = False
 
     grades = frappe.get_all(
         "MB Grade",

@@ -46,7 +46,7 @@ function WelcomePage() {
 
       <PageShell
         title={`هلا والله ${displayName} 👋`}
-        subtitle="جاهز تكمل مغامرتك اليوم؟ 🔥  •  مع الأستاذة عائشة"
+        subtitle="جاهز تكمل مغامرتك اليوم؟ 🔥"
       >
         <section className="welcome-mascot-card">
           <div className="welcome-mascot">🦉</div>

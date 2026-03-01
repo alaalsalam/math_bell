@@ -5,10 +5,10 @@ import { playSfx } from "../kidfx/sounds";
 import { clearStoredStudent, getStoredStudent } from "../utils/storage";
 
 const AISHA_TOPBAR_LINES = [
-  "مع الأستاذة عائشة ✨",
-  "أبطال الحساب مع الأستاذة عائشة 🚀",
-  "نلعب ونتعلم مع الأستاذة عائشة 🎯",
-  "جاهزين للمغامرة مع الأستاذة عائشة 🌟",
+  "مع الأستاذة عائشة الحارثي ✨",
+  "أبطال الحساب مع الأستاذة عائشة الحارثي 🚀",
+  "نلعب ونتعلم مع الأستاذة عائشة الحارثي 🎯",
+  "جاهزين للمغامرة مع الأستاذة عائشة الحارثي 🌟",
 ];
 
 function StudentTopBar() {
@@ -27,6 +27,12 @@ function StudentTopBar() {
     tapHaptic([12]);
     playSfx("pop", 0.45);
     navigate("/world");
+  }
+
+  function goDashboard() {
+    tapHaptic([12]);
+    playSfx("pop", 0.45);
+    navigate("/dashboard");
   }
 
   function logout() {
@@ -50,6 +56,9 @@ function StudentTopBar() {
         </small>
       </div>
       <div className="student-top-actions">
+        <button type="button" className="secondary-btn top-icon-btn" onClick={goDashboard} title="لوحة الإنجازات">
+          📊
+        </button>
         <button type="button" className="secondary-btn top-icon-btn" onClick={goWorld} title="الرئيسية">
           🏠
         </button>

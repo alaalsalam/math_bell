@@ -75,36 +75,42 @@ def evaluate_unlocks(
     student_level = normalize_int(student.level, 1)
     skill_levels = parse_doc_json(student.skill_levels_json)
 
-    filters = {"is_active": 1, "show_in_student_app": 1}
+    where_clauses = ["sk.is_active = 1", "sk.show_in_student_app = 1"]
+    values = {}
     if grade:
-        filters["grade"] = grade
+        where_clauses.append("sk.grade = %(grade)s")
+        values["grade"] = grade
     if domain:
-        filters["domain"] = domain
+        where_clauses.append("sk.domain = %(domain)s")
+        values["domain"] = domain
 
-    skills = frappe.get_all(
-        "MB Skill",
-        filters=filters,
-        fields=[
-            "name",
-            "code",
-            "grade",
-            "domain",
-            "mastery_threshold",
-            "min_level_required",
-            "unlock_rule",
-            "prerequisites_json",
-            "pack",
-            "order",
-            "creation",
-        ],
-        order_by="grade asc, domain asc, creation asc",
-        limit_page_length=5000,
+    skills = frappe.db.sql(
+        f"""
+        SELECT
+            sk.name,
+            sk.code,
+            sk.grade,
+            sk.domain,
+            sk.mastery_threshold,
+            sk.min_level_required,
+            sk.unlock_rule,
+            sk.prerequisites_json,
+            sk.pack,
+            sk.`order` AS skill_order,
+            sk.creation
+        FROM `tabMB Skill` sk
+        WHERE {' AND '.join(where_clauses)}
+        ORDER BY sk.grade ASC, sk.domain ASC, sk.`order` ASC, sk.creation ASC
+        LIMIT 5000
+        """,
+        values,
+        as_dict=True,
     )
     skills.sort(
         key=lambda row: (
             str(row.get("grade") or ""),
             str(row.get("domain") or ""),
-            normalize_int(row.get("order"), 0),
+            normalize_int(row.get("skill_order"), 0),
             str(row.get("creation") or ""),
         )
     )
