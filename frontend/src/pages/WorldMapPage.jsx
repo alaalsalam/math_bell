@@ -88,12 +88,17 @@ function WorldMapPage() {
   }, []);
 
   const regions = useMemo(() => {
+    const studentGrade = String(student?.grade || "").trim();
+    const visibleSkills = studentGrade
+      ? skills.filter((item) => String(item?.grade || "").trim() === studentGrade)
+      : skills;
+
     return REGION_MAP.map((region) => {
-      const nodes = skills.filter((item) => belongsToRegion(item, region.key));
+      const nodes = visibleSkills.filter((item) => belongsToRegion(item, region.key));
       const mastered = nodes.filter((item) => Boolean(item.is_mastered)).length;
       return { ...region, skills: nodes, opened: nodes.length, mastered };
     });
-  }, [skills]);
+  }, [skills, student?.grade]);
 
   function pickBestSkill(list) {
     const rows = Array.isArray(list) ? list : [];
@@ -106,7 +111,7 @@ function WorldMapPage() {
   }
 
   function startFromSkill(skill) {
-    const grade = student?.grade || skill.grade || "1";
+    const grade = skill?.grade || student?.grade || "1";
     const domain = skill.domain || "Addition";
     const query =
       `/play?grade=${encodeURIComponent(grade)}` +

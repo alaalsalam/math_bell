@@ -650,13 +650,34 @@ def start_session(
 
     skill_meta = None
     if skill:
-        validate_skill_belongs_to_grade_domain(skill, grade_name, domain)
         skill_meta = frappe.db.get_value(
             "MB Skill",
             skill,
-            ["name", "grade", "generator_type", "difficulty_min", "difficulty_max", "adaptive_enabled"],
+            [
+                "name",
+                "grade",
+                "domain",
+                "is_active",
+                "generator_type",
+                "difficulty_min",
+                "difficulty_max",
+                "adaptive_enabled",
+            ],
             as_dict=True,
         )
+        if not skill_meta:
+            frappe.throw(_("Skill '{0}' does not exist").format(skill))
+        if normalize_int(skill_meta.get("is_active"), 1) == 0:
+            frappe.throw(_("Skill '{0}' is inactive").format(skill))
+
+        # Keep gameplay resilient: if frontend sends mismatched grade/domain,
+        # trust the selected skill and align routing params automatically.
+        if skill_meta.get("grade") and skill_meta.get("grade") != grade_name:
+            grade_name = str(skill_meta.get("grade"))
+            grade_code_from_skill = frappe.db.get_value("MB Grade", grade_name, "grade") or _grade_code
+            ensure_runtime_catalog(str(grade_code_from_skill or _grade_code))
+        if skill_meta.get("domain") and skill_meta.get("domain") != domain:
+            domain = str(skill_meta.get("domain"))
     else:
         # Keep play flow smooth: pick first available skill automatically.
         skill_meta = _pick_runtime_skill(grade_name, domain)
