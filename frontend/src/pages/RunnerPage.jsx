@@ -93,10 +93,10 @@ function delay(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, Math.max(0, Number(ms) || 0)));
 }
 
-function readingDuration(text, baseMs = 1800) {
+function readingDuration(text, baseMs = 2800) {
   const content = String(text || "").trim();
-  const extra = Math.max(0, content.length - 16) * 42;
-  return Math.min(4600, Math.max(baseMs, baseMs + extra));
+  const extra = Math.max(0, content.length - 10) * 75;
+  return Math.min(7600, Math.max(baseMs, baseMs + extra));
 }
 
 function RunnerPage() {
@@ -286,12 +286,12 @@ function RunnerPage() {
     };
   }, [mode, loading, sessionId]);
 
-  function showMessageTemporarily(text, durationMs = 1800) {
+  function showMessageTemporarily(text, durationMs = 3200) {
     setFxMessage(text);
     window.setTimeout(() => setFxMessage(""), readingDuration(text, durationMs));
   }
 
-  function showStreakBanner(text, durationMs = 2000) {
+  function showStreakBanner(text, durationMs = 3400) {
     if (!text) return;
     setStreakBanner(text);
     window.setTimeout(() => setStreakBanner(""), readingDuration(text, durationMs));
@@ -341,7 +341,7 @@ function RunnerPage() {
     window.setTimeout(() => setShowBalloons(false), duration);
   }
 
-  function showHintBubble(text, durationMs = 2600) {
+  function showHintBubble(text, durationMs = 4200) {
     if (!text) return;
     setHintBubble(text);
     window.setTimeout(() => setHintBubble(""), readingDuration(text, durationMs));
@@ -449,7 +449,7 @@ function RunnerPage() {
       setFeedback({ status: isCorrect ? "correct" : "wrong", value: pickedValue });
       window.setTimeout(
         () => setFeedback({ status: "idle", value: null }),
-        isCorrect ? 1300 : 2200
+        isCorrect ? 2200 : 3600
       );
       setPendingHintCount(0);
       setMistakeBadge("");
@@ -464,42 +464,42 @@ function RunnerPage() {
         if (nextStreak % 2 === 0) playSound("applause", 0.45);
         triggerConfetti(1000);
         const correctText = pickPhrase(correctPhrases, "كفو يا بطل! 👏");
-        showMessageTemporarily(correctText, 1700);
-        readingPauseMs = Math.max(readingPauseMs, 1100);
+        showMessageTemporarily(correctText, 3200);
+        readingPauseMs = Math.max(readingPauseMs, 2000);
         if (nextStreak >= 3) {
           const streakText = getSaudiMessage("streak");
-          showStreakBanner(streakText, 2100);
+          showStreakBanner(streakText, 3600);
           setMascotText(streakText);
-          readingPauseMs = Math.max(readingPauseMs, 1300);
+          readingPauseMs = Math.max(readingPauseMs, 2500);
         } else if (getStoredStudent()?.display_name) {
           setMascotText(personalizedProgress(getStoredStudent().display_name));
         }
         if (nextStreak % 3 === 0) {
           triggerBalloons(2000);
           playSound("pop", 0.5);
-          showStreakBanner("سلسلة نار! كمل يا وحش 🔥", 2300);
-          readingPauseMs = Math.max(readingPauseMs, 1400);
+          showStreakBanner("سلسلة نار! كمل يا وحش 🔥", 3800);
+          readingPauseMs = Math.max(readingPauseMs, 2600);
         }
         const milestoneSticker = maybeAwardMilestoneSticker(nextCorrect, nextStreak);
         if (!milestoneSticker && nextCorrect % 5 === 0) {
           triggerConfetti(1200);
           playSound("applause", 0.65);
           const levelText = getSaudiMessage("level_up");
-          showMessageTemporarily(levelText, 2200);
-          readingPauseMs = Math.max(readingPauseMs, 1400);
+          showMessageTemporarily(levelText, 3600);
+          readingPauseMs = Math.max(readingPauseMs, 2500);
         }
       } else {
         setMascotMood("🤔");
         tapHaptic([45]);
         playSound("wrong", 0.7);
         const wrongText = pickPhrase(wrongPhrases, "قريب مره… جرّب ثانية 😉");
-        showMessageTemporarily(wrongText, 2800);
+        showMessageTemporarily(wrongText, 4200);
         setMascotText("بس ركز معي شوي 👀");
         setStreakBanner("");
-        readingPauseMs = Math.max(readingPauseMs, 2300);
+        readingPauseMs = Math.max(readingPauseMs, 3400);
         if (backendHint) {
-          showHintBubble(backendHint, 3200);
-          readingPauseMs = Math.max(readingPauseMs, 2800);
+          showHintBubble(backendHint, 5000);
+          readingPauseMs = Math.max(readingPauseMs, 4200);
         }
         if (mistakeType === "off_by_one") {
           setMistakeBadge("قريب! 🎯");
@@ -526,7 +526,7 @@ function RunnerPage() {
         const retries = currentRef ? Number(wrongRetryByQuestion[currentRef] || 0) : 0;
         if (currentRef && retries < 1) {
           setWrongRetryByQuestion((prev) => ({ ...prev, [currentRef]: retries + 1 }));
-          showHintBubble("يلا نجرب نفس السؤال مرة ثانية بهدوء 💪", 2800);
+          showHintBubble("يلا نجرب نفس السؤال مرة ثانية بهدوء 💪", 4600);
           setQuestionStartTs(Date.now());
           return;
         }
@@ -534,7 +534,7 @@ function RunnerPage() {
 
       const nextIndex = index + 1;
       if (nextIndex >= questions.length) {
-        if (readingPauseMs > 0) await delay(Math.min(readingPauseMs, 2400));
+        if (readingPauseMs > 0) await delay(Math.min(readingPauseMs, 4600));
         await finishSession();
         return;
       }
