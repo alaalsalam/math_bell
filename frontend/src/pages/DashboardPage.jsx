@@ -147,6 +147,10 @@ function DashboardPage() {
 
   return (
     <PageShell title="لوحتي" subtitle={greeting}>
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: من هذه اللوحة تبدئين تحدي اليوم، وتتابعين المستوى، السلسلة، ونقاط التقدم.</p>
+      </section>
+
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="ok-text">{error}</p> : null}
 

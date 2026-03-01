@@ -74,6 +74,10 @@ function TeacherSettingsPage() {
 
   return (
     <PageShell title="أدوات المعلمة السريعة" subtitle="بدون Desk: إعدادات خفيفة ومحفوظة على هذا الجهاز">
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: عدّلي الإعدادات ثم اضغطي (حفظ الإعدادات). التغييرات تطبق مباشرة على هذا الجهاز.</p>
+      </section>
+
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
       {ok ? <p className="ok-text">{ok}</p> : null}

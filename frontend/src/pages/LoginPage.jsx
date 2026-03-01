@@ -108,6 +108,10 @@ function LoginPage() {
       subtitle="دخول سهل وممتع"
       hideStudentHeader
     >
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: إذا كان عند الطفل حساب اختاري (دخول)، وإذا أول مرة اختاري (تسجيل جديد) ثم حددي الصف.</p>
+      </section>
+
       <section className="login-stage">
         {/* Decorative layer: playful symbols around the hero card. */}
         <div className="login-floating-icons" aria-hidden>

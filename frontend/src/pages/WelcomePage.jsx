@@ -48,6 +48,10 @@ function WelcomePage() {
         title={`هلا والله ${displayName} 👋`}
         subtitle="جاهز تكمل مغامرتك اليوم؟ 🔥"
       >
+        <section className="teacher-block class-card">
+          <p className="hint-text">دليل سريع: اضغطي (ابدأ المغامرة) للدخول للعب، أو (لوحة الإنجازات) لمراجعة تقدم الطالب.</p>
+        </section>
+
         <section className="welcome-mascot-card">
           <div className="welcome-mascot">🦉</div>
           <p>{cheer}</p>

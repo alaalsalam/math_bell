@@ -45,6 +45,10 @@ function TeacherRiskPage() {
   return (
     <PageShell title="التدخل المبكر" subtitle="طلاب ومهارات معرضة للخطر">
       <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: ابدئي بالطلاب ذوي المخاطر العالية أولًا، ثم استخدمي (التدخل المقترح) لتحديد خطة الدعم.</p>
+      </section>
+
+      <section className="teacher-block class-card">
         <div className="filters-row">
           <input
             className="field"

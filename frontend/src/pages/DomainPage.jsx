@@ -18,6 +18,10 @@ function DomainPage() {
 
   return (
     <PageShell title={GRADE_LABELS[grade] || "اختر الصف"} subtitle="اختر المجال">
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: اختاري المجال الذي تريدين التدريب عليه الآن (جمع، طرح، أو كسور).</p>
+      </section>
+
       <div className="grid-buttons">
         {DOMAINS.map((item) => (
           <button

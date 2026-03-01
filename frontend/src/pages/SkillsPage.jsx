@@ -104,6 +104,10 @@ function SkillsPage() {
 
   return (
     <PageShell title="المهارات" subtitle={subtitle}>
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: اختاري مهارة واضغطي (ابدأ الآن). كلمة (مكتمل) تعني أن الطالب أتقن هذه المهارة.</p>
+      </section>
+
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
       {!loading && !error && skills.length === 0 ? <p>لا توجد مهارات متاحة حالياً.</p> : null}
@@ -111,7 +115,7 @@ function SkillsPage() {
       {!loading && !error && skills.length > 0 ? (
         <section className="teacher-block class-card">
           <h3>ابدأ الآن 🚀</h3>
-          <p>بنختار لك أفضل مهارة تلقائيًا</p>
+          <p>نختار لك أسهل مهارة متاحة للبدء بسرعة</p>
           <div className="actions">
             <button type="button" className="big-btn" onClick={startSmartTask}>
               ابدأ المهمة الآن

@@ -133,6 +133,10 @@ function TeacherCurriculumPage() {
   return (
     <PageShell title="باني المنهج" subtitle="إدارة الباقات والمهارات">
       <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: استخدمي الفلاتر لمراجعة الباقات الحالية، أو أنشئي باقة جديدة ثم فعّليها للطلاب.</p>
+      </section>
+
+      <section className="teacher-block class-card">
         <h3>فلاتر الباقات</h3>
         <div className="filters-row">
           <select className="field" value={gradeFilter} onChange={(event) => setGradeFilter(event.target.value)}>

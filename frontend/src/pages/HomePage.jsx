@@ -45,6 +45,10 @@ function HomePage() {
 
   return (
     <PageShell title="جرس الرياضيات" subtitle={greeting}>
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: اختاري الصف ثم ابدئي اللعب. إذا تبين متابعة النتائج ادخلي لوحة الطالب.</p>
+      </section>
+
       <div className="teacher-mode-link-wrap">
         <button type="button" className="teacher-link" onClick={() => navigate("/teacher-login")}>
           وضع المعلمة

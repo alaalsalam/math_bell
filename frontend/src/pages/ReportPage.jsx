@@ -95,6 +95,9 @@ function ReportPage() {
   return (
     <PageShell title="النتيجة" subtitle="أحسنت يا بطل! 🌟">
       <Confetti active={showStarsFx} />
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: هذه الصفحة تلخّص نتيجة الجلسة: الدقة، المستوى، السلسلة، والنجوم التي حصل عليها الطالب.</p>
+      </section>
 
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}

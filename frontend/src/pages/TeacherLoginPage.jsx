@@ -37,6 +37,10 @@ function TeacherLoginPage() {
   return (
     <PageShell title="دخول الأستاذة" subtitle="دخول واضح وسريع إلى لوحة المعلمة">
       <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: ادخلي باسم المستخدم وكلمة المرور، ثم انتقلي مباشرة إلى لوحة المعلمة.</p>
+      </section>
+
+      <section className="teacher-block class-card">
         <h3>بيانات الدخول الافتراضية</h3>
         <p>اسم المستخدم: <strong>{DEFAULT_TEACHER_QUICK_SETTINGS.teacher_username}</strong></p>
         <p>كلمة المرور: <strong>{DEFAULT_TEACHER_QUICK_SETTINGS.teacher_password}</strong></p>

@@ -559,6 +559,9 @@ function RunnerPage() {
     <PageShell title="تشغيل الجلسة" subtitle={subtitle}>
       <Confetti active={showConfetti} />
       <Balloons active={showBalloons} />
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: اختاري الإجابة الصحيحة. عند الخطأ يظهر تلميح ونفس السؤال قد يتكرر مرة للمراجعة.</p>
+      </section>
       <div className="mascot-helper">{mascotMood}</div>
       <div className="mascot-helper-text">{mascotText}</div>
       {fxMessage ? <div className="kid-message-banner">{fxMessage}</div> : null}

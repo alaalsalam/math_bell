@@ -77,6 +77,10 @@ function TeacherStudentPage() {
 
   return (
     <PageShell title="تحليل الطالب" subtitle={student?.display_name || studentId}>
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: ابدئي ببطاقات المؤشرات، ثم راجعي نقاط القوة والضعف، وبعدها شاهدي آخر الجلسات.</p>
+      </section>
+
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
 

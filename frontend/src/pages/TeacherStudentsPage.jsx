@@ -47,6 +47,10 @@ function TeacherStudentsPage() {
   return (
     <PageShell title="الطلاب" subtitle="قائمة تحليلية مع فلاتر">
       <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: استخدمي البحث والفلاتر لتحديد الطالب، ثم اضغطي (عرض التحليل) لفتح تفاصيله.</p>
+      </section>
+
+      <section className="teacher-block class-card">
         <div className="filters-row">
           <input
             className="field"

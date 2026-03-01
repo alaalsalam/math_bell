@@ -133,6 +133,10 @@ function WorldMapPage() {
   return (
     <main className="world-screen">
       <PageShell title="عالم المغامرة" subtitle="اختر منطقة وابدأ اللعب">
+        <section className="teacher-block class-card">
+          <p className="hint-text">دليل سريع: كل بطاقة تمثل منطقة تعلم. اضغطي (ابدأ الآن) لبدء أفضل مهارة متاحة داخل المنطقة.</p>
+        </section>
+
         <section className="aisha-world-banner" key={`world-welcome-${welcomeIndex}`}>
           <span className="spark">✨</span>
           <p>{WELCOME_LINES[welcomeIndex]}</p>

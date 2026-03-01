@@ -48,6 +48,10 @@ function TeacherClassPage() {
 
   return (
     <PageShell title="تفاصيل الفصل" subtitle={classRow?.title || classId}>
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: هنا تجدين بيانات الفصل، تقريره العام، ثم قائمة الطلاب للدخول إلى تقاريرهم.</p>
+      </section>
+
       {loading ? <p>...جاري التحميل</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
 

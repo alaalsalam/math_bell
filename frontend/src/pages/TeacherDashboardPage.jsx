@@ -97,6 +97,10 @@ function TeacherDashboardPage() {
 
   return (
     <PageShell title="لوحة المعلمة" subtitle="مؤشرات احترافية">
+      <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: هذه الصفحة تعطيك صورة عامة سريعة، ومن الروابط بالأسفل تنتقلين للتقارير التفصيلية.</p>
+      </section>
+
       <div className="teacher-mode-link-wrap">
         <button type="button" className="teacher-link" onClick={exitTeacherMode}>
           إغلاق وضع المعلمة

@@ -40,6 +40,10 @@ function TeacherLeaderboardPage() {
   return (
     <PageShell title="لوحة الشرف الأسبوعية" subtitle="ترتيب + أكثر المتحسنين">
       <section className="teacher-block class-card">
+        <p className="hint-text">دليل سريع: الجدول الأول لأفضل الطلاب هذا الأسبوع، والجدول الثاني يوضح الطلاب الأكثر تحسنًا.</p>
+      </section>
+
+      <section className="teacher-block class-card">
         <div className="filters-row">
           <select className="field" value={grade} onChange={(e) => setGrade(e.target.value)}>
             <option value="">كل الصفوف</option>
