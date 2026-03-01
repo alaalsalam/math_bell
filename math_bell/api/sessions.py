@@ -151,6 +151,38 @@ def _pick_runtime_skill(grade_name: str, domain: str) -> dict | None:
     return rows[0]
 
 
+def _resolve_skill_for_session(session, requested_skill: str | None = None) -> dict | None:
+    """
+    Resolve authoritative skill for a session and auto-heal stale grade/domain mismatch.
+    """
+    skill_name = (getattr(session, "skill", None) or requested_skill or "").strip()
+    if not skill_name:
+        return None
+
+    row = frappe.db.get_value(
+        "MB Skill",
+        skill_name,
+        ["name", "grade", "domain", "is_active", "generator_type"],
+        as_dict=True,
+    )
+    if not row:
+        return None
+    if normalize_int(row.get("is_active"), 1) == 0:
+        return None
+
+    updated = False
+    if row.get("grade") and getattr(session, "grade", None) != row.get("grade"):
+        session.grade = row.get("grade")
+        updated = True
+    if row.get("domain") and getattr(session, "domain", None) != row.get("domain"):
+        session.domain = row.get("domain")
+        updated = True
+    if updated:
+        session.save(ignore_permissions=True)
+
+    return row
+
+
 def _extract_answer_value(answer):
     if isinstance(answer, dict):
         if "value" in answer:
@@ -792,19 +824,25 @@ def submit_attempt(
     hint_used_count: int | str | None = None,
 ):
     session_id = (session_id or "").strip()
-    skill = (skill or "").strip()
+    requested_skill = (skill or "").strip()
     question_ref = (question_ref or "").strip() or None
 
     if not session_id:
         frappe.throw(_("session_id is required"))
-    if not skill:
-        frappe.throw(_("skill is required"))
 
     session = frappe.get_doc("MB Session", session_id)
     if session.status != "active":
         frappe.throw(_("Session '{0}' is not active").format(session.name))
 
-    validate_skill_belongs_to_grade_domain(skill, session.grade, session.domain)
+    # Frontend-provided skill can be stale; trust session skill first to keep play resilient.
+    skill_meta = _resolve_skill_for_session(session, requested_skill=requested_skill)
+    effective_skill = (
+        str(skill_meta.get("name"))
+        if isinstance(skill_meta, dict) and skill_meta.get("name")
+        else (str(session.skill or requested_skill).strip())
+    )
+    if not effective_skill:
+        frappe.throw(_("skill is required"))
 
     parsed_answer = parse_json_input(given_answer_json, "given_answer_json", required=False)
     session_meta = parse_doc_json(session.stats_json)
@@ -829,12 +867,13 @@ def submit_attempt(
     mistake_type = "none"
     hint_text = ""
 
-    skill_meta = frappe.db.get_value(
-        "MB Skill",
-        skill,
-        ["name", "generator_type"],
-        as_dict=True,
-    )
+    if not skill_meta:
+        skill_meta = frappe.db.get_value(
+            "MB Skill",
+            effective_skill,
+            ["name", "generator_type"],
+            as_dict=True,
+        )
     generator_type = _infer_generator_type(skill_meta, question_data)
     if not is_correct_bool:
         hint_payload = {
@@ -850,7 +889,7 @@ def submit_attempt(
         {
             "doctype": "MB Attempt Log",
             "session": session.name,
-            "skill": skill,
+            "skill": effective_skill,
             "question_ref": question_ref,
             "given_answer_json": to_json_string(parsed_answer),
             "is_correct": 1 if is_correct_bool else 0,
@@ -894,7 +933,8 @@ def end_session(session_id: str):
     was_ended = session.status == "ended"
 
     if session.skill:
-        validate_skill_belongs_to_grade_domain(session.skill, session.grade, session.domain)
+        # Do not block student flow on historical mismatch; align silently when possible.
+        _resolve_skill_for_session(session, requested_skill=session.skill)
 
     ended_at = now_datetime()
     started_at = session.started_at or ended_at
