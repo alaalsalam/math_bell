@@ -96,7 +96,8 @@ function WorldMapPage() {
     return REGION_MAP.map((region) => {
       const nodes = visibleSkills.filter((item) => belongsToRegion(item, region.key));
       const mastered = nodes.filter((item) => Boolean(item.is_mastered)).length;
-      return { ...region, skills: nodes, opened: nodes.length, mastered };
+      const completed = nodes.filter((item) => Boolean(item.has_progress) || Boolean(item.is_mastered)).length;
+      return { ...region, skills: nodes, opened: nodes.length, mastered, completed };
     });
   }, [skills, student?.grade]);
 
@@ -152,7 +153,8 @@ function WorldMapPage() {
                 <div className="world-region-icon">{region.icon}</div>
                 <h3>{region.title}</h3>
                 <p>مفتوح {region.opened} مهارة</p>
-                <p>مكتمل {region.mastered} 👑</p>
+                <p>منجز {region.completed} ✅</p>
+                <p>متقن {region.mastered} 👑</p>
                 <button type="button" className="big-btn" onClick={() => startAutoFromRegion(region)}>
                   ابدأ الآن
                 </button>

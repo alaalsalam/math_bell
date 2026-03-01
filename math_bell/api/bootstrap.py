@@ -191,6 +191,8 @@ def get_bootstrap(student_id: str | None = None):
             min_level_required = _as_int(row.get("min_level_required"), 1)
             explicit_unlocked = _as_bool(entry.get("unlocked")) if isinstance(entry, dict) else False
             mastered = _is_mastered(entry if isinstance(entry, dict) else {}, row.get("mastery_threshold") or 0.7)
+            attempts_value = _as_int(entry.get("attempts"), 0) if isinstance(entry, dict) else 0
+            has_progress = attempts_value > 0
 
             if use_locking:
                 # Locking mode depends on precomputed visibility from skill graph.
@@ -214,6 +216,8 @@ def get_bootstrap(student_id: str | None = None):
                 "generated_content": has_generated_content,
                 "is_unlocked": unlocked,
                 "is_mastered": mastered,
+                "has_progress": has_progress,
+                "attempts": attempts_value,
                 "unlock_rule": row.get("unlock_rule"),
                 "pack": row.get("pack"),
                 "prerequisites_json": row.get("prerequisites_json"),
