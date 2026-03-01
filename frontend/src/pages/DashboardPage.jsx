@@ -163,6 +163,7 @@ function DashboardPage() {
               <span>{insight.stars_total || 0} ⭐</span>
               <span>{insight.streak || 0} 🔥</span>
             </div>
+            <p className="hint-text">المستوى يرتفع مع النجوم، وسلسلة النجاح تزيد كل يوم تدريب متواصل.</p>
             <p className="dashboard-coach-note">{pulseMessage}</p>
           </section>
 
@@ -186,8 +187,9 @@ function DashboardPage() {
                 )
               }
             >
-              ابدأ التحدي
+              ابدأ التحدي اليومي 🔥
             </button>
+            <p className="hint-text">هذا زر تحدي اليوم: يُسجّل كإنجاز يومي ويزيد حماسك اليومي.</p>
             <button
               className="big-btn"
               type="button"
@@ -200,8 +202,9 @@ function DashboardPage() {
                 )
               }
             >
-              ابدأ تلقائيًا الآن 🚀
+              ابدأ تلقائيًا 🚀
             </button>
+            <p className="hint-text">هذا زر البدء التلقائي: يفتح مباشرة المهارة المقترحة للتدريب السريع.</p>
           </section>
 
           <section className="teacher-block class-card">
@@ -209,6 +212,7 @@ function DashboardPage() {
             <p>المستوى الحالي: {insight.level || 1}</p>
             <p>النجوم: {insight.stars_total || 0} ⭐</p>
             <p>السلسلة: {insight.streak || 0} 🔥</p>
+            <p className="hint-text">سلسلة النجاح = عدد الأيام المتتالية اللي لعبت فيها بدون انقطاع.</p>
             <p className="dashboard-mini-motivation">{streakMessage}</p>
           </section>
 

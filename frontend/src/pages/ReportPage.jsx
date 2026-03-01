@@ -109,6 +109,7 @@ function ReportPage() {
           <p>
             النتيجة: <strong>{accuracyPercent}%</strong>
           </p>
+          <p className="hint-text">نسبة الدقة = عدد الإجابات الصحيحة ÷ عدد المحاولات.</p>
           <p>
             إجابات صحيحة: <strong>{report.correct || 0}</strong> / المحاولات: <strong>{report.attempts || 0}</strong>
           </p>
@@ -132,12 +133,12 @@ function ReportPage() {
             <article className="report-progress-card">
               <h4>مستواك الحالي</h4>
               <p className="report-progress-value">Lv. {vault?.level || 1}</p>
-              <small>النجوم الكلية: {vault?.total_stars || 0} ⭐</small>
+              <small>يرتفع المستوى كلما جمعت نجوم أكثر. المجموع: {vault?.total_stars || 0} ⭐</small>
             </article>
             <article className="report-progress-card">
               <h4>سلسلتك</h4>
               <p className="report-progress-value">{vault?.current_streak || 0} 🔥</p>
-              <small>أفضل سلسلة: {vault?.best_streak || 0}</small>
+              <small>عدد الأيام المتتالية الحالية. أفضل سلسلة: {vault?.best_streak || 0}</small>
             </article>
             <article className="report-progress-card">
               <h4>شاراتك</h4>
