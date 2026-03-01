@@ -138,8 +138,8 @@ function WorldMapPage() {
 
         {!loading && !error ? (
           <section className="world-grid">
-            {regions.map((region) => (
-              <article className="world-region-card" key={region.key}>
+            {regions.map((region, idx) => (
+              <article className="world-region-card" key={region.key} style={{ "--stagger": idx }}>
                 <div className="world-region-icon">{region.icon}</div>
                 <h3>{region.title}</h3>
                 <p>مفتوح {region.opened} مهارة</p>
