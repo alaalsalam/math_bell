@@ -617,6 +617,7 @@ function RunnerPage() {
                   <span>{accuracyPercent}%</span>
                 </div>
                 <small className="hint-text">نسبة الدقة</small>
+                <small className="hint-text">تلميح: الدقة تزيد فقط مع الإجابة الصحيحة ✅</small>
               </div>
             </div>
             <div className="sticker-pouch">
