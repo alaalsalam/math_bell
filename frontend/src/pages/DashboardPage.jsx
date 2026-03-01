@@ -190,21 +190,6 @@ function DashboardPage() {
               ابدأ التحدي اليومي 🔥
             </button>
             <p className="hint-text">هذا زر تحدي اليوم: يُسجّل كإنجاز يومي ويزيد حماسك اليومي.</p>
-            <button
-              className="big-btn"
-              type="button"
-              onClick={() =>
-                navigate(
-                  `/play?mode=practice&grade=${encodeURIComponent(student?.grade || "1")}` +
-                    `&domain=${encodeURIComponent(dailyChallenge?.suggested_domain || "Addition")}` +
-                    `&skill=${encodeURIComponent(dailyChallenge?.suggested_skill || "")}` +
-                    `&ui=${encodeURIComponent(dailyChallenge?.ui || "mcq")}`
-                )
-              }
-            >
-              ابدأ تلقائيًا 🚀
-            </button>
-            <p className="hint-text">هذا زر البدء التلقائي: يفتح مباشرة المهارة المقترحة للتدريب السريع.</p>
           </section>
 
           <section className="teacher-block class-card">
