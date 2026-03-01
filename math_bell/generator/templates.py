@@ -25,13 +25,35 @@ def _fraction_string(numerator: int, denominator: int) -> str:
 
 def _fraction_choices(correct: str, denominator: int, rng: random.Random, count: int = 3) -> list[str]:
     choices = {correct}
-    while len(choices) < count:
-        n = rng.randint(1, max(1, denominator - 1))
+    max_n = max(1, denominator - 1)
+
+    # Bounded generation to avoid infinite loops when denominator has too few unique numerators.
+    for _ in range(0, 48):
+        if len(choices) >= count:
+            break
+
+        n = rng.randint(1, max_n)
         choices.add(_fraction_string(n, denominator))
+
+        if len(choices) >= count:
+            break
+
+        alt_den = rng.randint(2, max(4, denominator + 3))
+        alt_n = rng.randint(1, max(1, alt_den - 1))
+        choices.add(_fraction_string(alt_n, alt_den))
+
+    if len(choices) < count:
+        for alt_den in range(2, max(5, denominator + 4)):
+            for alt_n in range(1, alt_den):
+                choices.add(_fraction_string(alt_n, alt_den))
+                if len(choices) >= count:
+                    break
+            if len(choices) >= count:
+                break
 
     output = list(choices)
     rng.shuffle(output)
-    return output
+    return output[:count]
 
 
 def _addition_range(difficulty: int, grade: int, rng: random.Random):
