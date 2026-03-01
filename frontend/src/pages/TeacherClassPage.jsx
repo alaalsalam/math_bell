@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { getClassReport, getTeacherOverview, listStudents } from "../api/client";
+import { toReadableSkillLabel } from "../utils/skillLabels";
 
 function TeacherClassPage() {
   const { classId } = useParams();
@@ -77,7 +78,7 @@ function TeacherClassPage() {
                 <ul>
                   {(report.top_skills || []).map((row) => (
                     <li key={row.skill}>
-                      {row.skill}: {row.attempts}
+                      {toReadableSkillLabel(row.skill)}: {row.attempts}
                     </li>
                   ))}
                 </ul>

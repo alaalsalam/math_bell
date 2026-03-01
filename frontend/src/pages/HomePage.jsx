@@ -4,6 +4,7 @@ import PageShell from "../components/PageShell";
 import { getTimeGreeting, personalizedStart } from "../saudi/greetings";
 import { getStudentHomeInsights } from "../api/client";
 import { getStoredStudent } from "../utils/storage";
+import { toReadableSkillLabel } from "../utils/skillLabels";
 
 const GRADES = [
   { key: "1", label: "الصف الأول" },
@@ -59,7 +60,7 @@ function HomePage() {
         <section className="teacher-block class-grid">
           <article className="class-card">
             <h3>اقتراح اليوم</h3>
-            <p>{insight.recommended_next_skill || "ابدأ أي مهارة متاحة"}</p>
+            <p>{toReadableSkillLabel(insight.recommended_next_skill || "ابدأ أي مهارة متاحة")}</p>
             <p>
               المستوى: {insight.level || 1} | السلسلة: {insight.streak || 0} 🔥
             </p>

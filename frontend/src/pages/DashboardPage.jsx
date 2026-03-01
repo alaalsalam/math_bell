@@ -15,6 +15,7 @@ import { getDailyTip } from "../saudi/tips";
 import { getDashboardMessage } from "../saudi/dashboard_messages";
 import { getStoredStudent } from "../utils/storage";
 import { loadBootstrap } from "../utils/bootstrapCache";
+import { toReadableSkillLabel } from "../utils/skillLabels";
 
 const DOMAIN_AR = {
   Addition: "الجمع",
@@ -25,7 +26,7 @@ const DOMAIN_AR = {
 function normalizeSkillLabel(value, map) {
   const key = String(value || "").trim();
   if (!key) return "مهارة متاحة";
-  return map.get(key) || key;
+  return map.get(key) || toReadableSkillLabel(key);
 }
 
 function DashboardPage() {

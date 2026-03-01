@@ -4,6 +4,7 @@ import PageShell from "../components/PageShell";
 import { loadBootstrap } from "../utils/bootstrapCache";
 import { getStoredStudent } from "../utils/storage";
 import { mergeTeacherSettings } from "../utils/teacherQuickSettings";
+import { toReadableSkillLabel } from "../utils/skillLabels";
 
 const DOMAIN_LABELS = {
   Addition: "الجمع",
@@ -127,7 +128,7 @@ function SkillsPage() {
       <div className="skill-grid">
         {skills.map((skill) => (
           <article key={skill.name} className="skill-card">
-            <h3>{skill.title_ar || skill.code}</h3>
+            <h3>{skill.title_ar || toReadableSkillLabel(skill.code || skill.name)}</h3>
             <p>{skill.is_mastered ? "مكتمل 👑" : skill.is_unlocked === false ? "مغلق 🔒" : "جاهز ✨"}</p>
             <div className="actions">
               <button

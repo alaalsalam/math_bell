@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { getStudentDetail } from "../api/client";
+import { toReadableSkillLabel } from "../utils/skillLabels";
 
 const DOMAIN_LABELS = {
   Addition: "الجمع",
@@ -67,7 +68,7 @@ function TeacherStudentPage() {
       sessions,
       avgAccuracy,
       totalTime: Number(detail?.time_spent_seconds || 0),
-      recommendation: detail?.recommended_next_skill || "-",
+      recommendation: toReadableSkillLabel(detail?.recommended_next_skill || "-"),
       stars: Number(detail?.reward_summary?.total_stars_earned || 0),
       currentStreak: Number(detail?.reward_summary?.current_streak || 0),
       bestStreak: Number(detail?.reward_summary?.best_streak || 0),
@@ -127,7 +128,7 @@ function TeacherStudentPage() {
               <ul>
                 {topSkills.map((row) => (
                   <li key={row.skill}>
-                    {row.skill}: {Math.round((row.accuracy || 0) * 100)}% ({row.attempts})
+                    {toReadableSkillLabel(row.skill)}: {Math.round((row.accuracy || 0) * 100)}% ({row.attempts})
                   </li>
                 ))}
                 {topSkills.length === 0 ? <li>لا توجد بيانات كافية.</li> : null}
@@ -138,7 +139,7 @@ function TeacherStudentPage() {
               <ul>
                 {weakSkills.map((row) => (
                   <li key={row.skill}>
-                    {row.skill}: {Math.round((row.accuracy || 0) * 100)}% ({row.attempts})
+                    {toReadableSkillLabel(row.skill)}: {Math.round((row.accuracy || 0) * 100)}% ({row.attempts})
                   </li>
                 ))}
                 {weakSkills.length === 0 ? <li>لا توجد بيانات كافية.</li> : null}
@@ -227,7 +228,7 @@ function TeacherStudentPage() {
                     <tr key={session.name}>
                       <td>{session.session_type === "bell_session" ? "جرس" : "تدريب"}</td>
                       <td>{DOMAIN_LABELS[session.domain] || session.domain || "-"}</td>
-                      <td>{session.skill || "-"}</td>
+                      <td>{toReadableSkillLabel(session.skill || "-")}</td>
                       <td>{formatDateTime(session.started_at)}</td>
                       <td>{session.duration_seconds || 0} ث</td>
                       <td>{Math.round((session.accuracy || 0) * 100)}%</td>
