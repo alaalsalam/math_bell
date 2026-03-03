@@ -158,7 +158,7 @@ function DashboardPage() {
       {!loading && insight ? (
         <>
           <section className={`dashboard-hero class-card ${coachPulse ? "is-pulse" : ""}`}>
-            <p className="dashboard-hero-kicker">تعلم والعب مع الأستاذة عائشة الحارثي</p>
+            <p className="dashboard-hero-kicker">تعلم والعب مع الأستاذة عائشه شفلوت الحارثي</p>
             <h2>{student?.display_name ? `يا هلا ${student.display_name} 👋` : "يا هلا بطل 👋"}</h2>
             <p className="dashboard-hero-line" key={heroMessage}>
               {heroMessage}

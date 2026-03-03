@@ -130,7 +130,7 @@ function LoginPage() {
             <strong>{modeLabel}</strong>
           </div>
           <p className="login-helper-live" key={`${mode}-${helperText}`}>{helperText}</p>
-          <p className="aisha-signature">إعداد وتقديم: الأستاذة عائشة الحارثي</p>
+          <p className="aisha-signature">إعداد وتقديم: الأستاذة عائشه شفلوت الحارثي</p>
         </article>
 
         <article className="login-form-card">

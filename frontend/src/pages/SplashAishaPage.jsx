@@ -34,7 +34,7 @@ function SplashAishaPage() {
       <section className="aisha-splash-card">
         <p className="aisha-pretitle">جرس الرياضيات</p>
         <h1>هلا {displayName} ✨</h1>
-        <p className="aisha-brand-line">إعداد وتقديم: الأستاذة عائشة الحارثي</p>
+        <p className="aisha-brand-line">إعداد وتقديم: الأستاذة عائشه شفلوت الحارثي</p>
         <p className="aisha-splash-copy">جاهز نبدأ مغامرة جديدة اليوم؟</p>
         <button type="button" className="big-btn aisha-start-btn" onClick={startAdventure}>
           ابدأ الآن 🚀

@@ -106,7 +106,7 @@ function ReportPage() {
         <section className="report-card">
           <div className="report-hero-banner">
             <strong>{sessionMood}</strong>
-            <span>إعداد وتقديم: الأستاذة عائشة الحارثي</span>
+            <span>إعداد وتقديم: الأستاذة عائشه شفلوت الحارثي</span>
           </div>
 
           <p>
@@ -168,7 +168,7 @@ function ReportPage() {
             </p>
           ) : null}
           {streakBroken ? <p className="error-text">فاتك أمس 😢 بس نقدر نرجع أقوى اليوم!</p> : null}
-          <p className="aisha-signature">ممتاز يا بطل — الأستاذة عائشة الحارثي</p>
+          <p className="aisha-signature">ممتاز يا بطل — الأستاذة عائشه شفلوت الحارثي</p>
 
           <div className="actions-inline">
             <button type="button" className="primary-btn" onClick={() => navigate("/play")}>ابدأ تحدي جديد</button>
