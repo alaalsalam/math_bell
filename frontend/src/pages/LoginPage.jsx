@@ -217,6 +217,15 @@ function LoginPage() {
             </button>
           </form>
 
+          <button
+            type="button"
+            className="secondary-btn"
+            onClick={() => navigate("/teacher-login")}
+            style={{ marginTop: 10 }}
+          >
+            دخول الأستاذة
+          </button>
+
           {error ? <p className="error-text">{error}</p> : null}
         </article>
       </section>

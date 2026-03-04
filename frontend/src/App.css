@@ -112,10 +112,50 @@
   margin: 0;
 }
 
+.page-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .page-back-btn {
   min-width: 84px;
   min-height: 40px;
   font-weight: 800;
+}
+
+.quick-menu-wrap {
+  position: relative;
+}
+
+.quick-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-start: 0;
+  z-index: 30;
+  width: min(340px, 86vw);
+  border-radius: 16px;
+  border: 1px solid #bfdbfe;
+  background: linear-gradient(160deg, #ffffff, #f8fbff);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+  padding: 10px;
+  animation: lift-in 0.2s ease;
+}
+
+.quick-menu-title {
+  margin: 0 0 8px;
+  color: #0369a1;
+  font-weight: 900;
+}
+
+.quick-menu-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.quick-menu-btn {
+  width: 100%;
+  text-align: right;
 }
 
 .subtitle {
@@ -1832,6 +1872,11 @@
 
   .page-heading-row {
     flex-wrap: wrap;
+  }
+
+  .page-heading-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .student-top-actions {
