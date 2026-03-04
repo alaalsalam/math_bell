@@ -1,7 +1,7 @@
 app_name = "math_bell"
-app_title = "Math Bell"
+app_title = "تعلم مع الاستاذة عائشة شفلوت الحارثي"
 app_publisher = "alaalsalam"
-app_description = "Kids math games for Grade 1-2 (addition/subtraction/fractions)"
+app_description = "منصة رياضيات تفاعلية للأطفال للصفين الأول والثاني مع الأستاذة عائشة شفلوت الحارثي"
 app_email = "alaalsalam101@gmail.com"
 app_license = "mit"
 
