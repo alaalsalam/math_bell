@@ -1,24 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "../components/PageShell";
-import {
-  DEFAULT_TEACHER_QUICK_SETTINGS,
-  readTeacherQuickSettings,
-} from "../utils/teacherQuickSettings";
 import { enableTeacherMode, verifyTeacherCredentials } from "../utils/teacherMode";
 
 function TeacherLoginPage() {
   const navigate = useNavigate();
-  const quick = readTeacherQuickSettings();
-  const [username, setUsername] = useState(String(quick.teacher_username || "aisha"));
-  const [password, setPassword] = useState(String(quick.teacher_password || "Aisha1234"));
+  const [username, setUsername] = useState("aisha");
+  const [password, setPassword] = useState("aisha");
   const [error, setError] = useState("");
-
-  function useDefaultCredentials() {
-    setUsername(DEFAULT_TEACHER_QUICK_SETTINGS.teacher_username);
-    setPassword(DEFAULT_TEACHER_QUICK_SETTINGS.teacher_password);
-    setError("");
-  }
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -38,15 +27,6 @@ function TeacherLoginPage() {
     <PageShell title="دخول الأستاذة" subtitle="دخول واضح وسريع إلى لوحة المعلمة">
       <section className="teacher-block class-card">
         <p className="hint-text">دليل سريع: ادخلي باسم المستخدم وكلمة المرور، ثم انتقلي مباشرة إلى لوحة المعلمة.</p>
-      </section>
-
-      <section className="teacher-block class-card">
-        <h3>بيانات الدخول الافتراضية</h3>
-        <p>اسم المستخدم: <strong>{DEFAULT_TEACHER_QUICK_SETTINGS.teacher_username}</strong></p>
-        <p>كلمة المرور: <strong>{DEFAULT_TEACHER_QUICK_SETTINGS.teacher_password}</strong></p>
-        <button type="button" className="secondary-btn" onClick={useDefaultCredentials}>
-          استخدام البيانات الافتراضية
-        </button>
       </section>
 
       <form className="auth-form" onSubmit={handleSubmit}>

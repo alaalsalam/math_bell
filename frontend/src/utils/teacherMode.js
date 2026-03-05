@@ -43,11 +43,10 @@ export function getTeacherModeUser() {
 }
 
 export function verifyTeacherCredentials({ username, password }) {
-  const settings = readTeacherQuickSettings();
-  const expectedUsername = String(settings.teacher_username || "aisha").trim().toLowerCase();
-  const expectedPassword = String(settings.teacher_password || "Aisha1234");
+  const expectedUsername = "aisha";
+  const expectedPassword = "aisha";
   return (
-    String(username || "").trim().toLowerCase() === expectedUsername &&
+    String(username || "").trim().toLowerCase() === expectedUsername.toLowerCase() &&
     String(password || "") === expectedPassword
   );
 }
