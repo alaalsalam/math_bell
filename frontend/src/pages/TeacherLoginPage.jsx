@@ -5,8 +5,8 @@ import { enableTeacherMode, verifyTeacherCredentials } from "../utils/teacherMod
 
 function TeacherLoginPage() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("aisha");
-  const [password, setPassword] = useState("aisha");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   function handleSubmit(event) {
@@ -36,6 +36,7 @@ function TeacherLoginPage() {
           onChange={(event) => setUsername(event.target.value)}
           placeholder="اسم المستخدم"
           autoComplete="username"
+          required
         />
         <input
           className="field"
@@ -44,6 +45,7 @@ function TeacherLoginPage() {
           onChange={(event) => setPassword(event.target.value)}
           placeholder="كلمة المرور"
           autoComplete="current-password"
+          required
         />
 
         {error ? <p className="error-text">{error}</p> : null}
